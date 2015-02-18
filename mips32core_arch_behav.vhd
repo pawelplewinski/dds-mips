@@ -137,7 +137,7 @@ begin
 		    -- BEQ instruction
 		    when "000100" =>
 			-- sign extended add
-			addres := ((32 downto IA_LEN => '0') & pgc) + ((32 downto IA_LEN => imval(15)) & imval(15 downto 0));
+			addres := ((32 downto IA_LEN => '0') & pgc) + ((32 downto 16 => imval(15)) & imval(15 downto 0));
 			if(sreg = treg) then
 			    pgc := addres(IA_LEN-1 downto 0);
 			else
@@ -146,7 +146,7 @@ begin
 		    -- BGTZ instruction
 		    when "000111" =>
 			-- sign extended add
-			addres := ((32 downto IA_LEN => '0') & pgc) + ((32 downto IA_LEN => imval(15)) & imval(15 downto 0));
+			addres := ((32 downto IA_LEN => '0') & pgc) + ((32 downto 16 => imval(15)) & imval(15 downto 0));
 			-- signed 
 			if(sreg(31) = '0' and (sreg(30 downto 0) > 0)) then
 			    pgc := addres(IA_LEN-1 downto 0);
