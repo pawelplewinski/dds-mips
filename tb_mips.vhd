@@ -14,16 +14,18 @@ architecture tb_arch of tb_mips is
     signal resetn : std_logic;
     
     component mem32 is
-    generic(ADDR_LENGTH : natural := 9);
-    port(addr : in std_logic_vector(ADDR_LENGTH downto 0);
-       data : inout std_logic_vector(31 downto 0);
+	generic(ADDR_LENGTH : natural := 9);
+	port(
+		-- wishbone interface
+		wbs_addr_i : in std_logic_vector(ADDR_LENGTH-1 downto 0);
+		wbs_dat_o : out std_logic_vector(31 downto 0);
+		wbs_dat_i : in std_logic_vector(31 downto 0);
        
-       we : in std_logic;	-- '1' -> enable write ; '0' -> disalbe write
-       wr : in std_logic;	-- '0' -> write ; '1' -> read
-       
-       
-       clk : in std_logic;
-       resetn : in std_logic);
+		wbs_we_i : in std_logic;	-- '1' -> enable write ; '0' -> disable write
+          
+		clk : in std_logic;
+		resetn : in std_logic
+	);
     end component mem32;
     
     component mips32sys is 
@@ -31,7 +33,6 @@ architecture tb_arch of tb_mips is
 		DA_LEN : natural := 6;
 		GPIO_LEN : natural := 8);
 	port(
-	gpo0 : out std_logic_vector(GPIO_LEN-1 downto 0);
 	
 	ibus_a_o : out std_logic_vector(IA_LEN-1 downto 0);
 	ibus_d_i : in std_logic_vector(31 downto 0);
@@ -40,35 +41,43 @@ architecture tb_arch of tb_mips is
 	resetn : in std_logic);
     end component mips32sys;
     
-    signal gpo0 : std_logic_vector(7 downto 0);
     
-    signal imem_a : std_logic_vector(IA_LEN-1 downto 0);
-    signal imem_d : std_logic_vector(31 downto 0);
+    signal imem_a_i : std_logic_vector(IA_LEN-1 downto 0);
+    signal imem_d_o : std_logic_vector(31 downto 0);
+    signal imem_d_i : std_logic_vector(31 downto 0);
     signal imem_we : std_logic;
-    signal imem_wr : std_logic;
 
     signal inst : std_logic_vector(31 downto 0) := (others => '0');
+    
+    signal ibus_a_o : std_logic_vector(IA_LEN-1 downto 0);
+    signal iaddr: std_logic_vector(IA_LEN-1 downto 0);
+    signal ia_sel: std_logic;
 begin
     -- Connect memory
     imem : mem32
     generic map(ADDR_LENGTH => IA_LEN)
-    port map(addr => imem_a,
-	     data => imem_d,
-	     we => imem_we,
-	     wr => imem_wr,
-	     clk => clk,
-	     resetn => resetn);
+    port map(wbs_addr_i => imem_a_i,
+	    wbs_dat_o => imem_d_o,
+	    wbs_dat_i => imem_d_i,
+	    wbs_we_i => imem_we,
+		     
+	    clk => clk,
+	    resetn => resetn);
 	     
     -- Connect MIPS system
     gut : mips32sys
     generic map(IA_LEN => IA_LEN,
 		DA_LEN => DA_LEN,
 		GPIO_LEN => 8)
-    port map(gpo0 => gpo0,
-	     ibus_a_o => imem_a,
-	     ibus_d_i => imem_d,
+    port map(
+	     ibus_a_o => ibus_a_o,
+	     ibus_d_i => imem_d_o,
 	     clk => clk,
 	     resetn => resetn);
+	     
+	  -- switch between cpu and program loader
+	  imem_a_i <=  ibus_a_o when ia_sel = '0' else
+	             iaddr;
 
     clk <= not clk after 50 ns;
     
@@ -82,49 +91,50 @@ begin
     mem_access : process begin
 	-- wait till the system is reset
 	wait until resetn = '1';
-	
+	-- Give control of the memory address to the test bench
+	ia_sel <= '0';
 	-- Writing ...
-	imem_wr <= '0';
 	-- First word
 	wait until clk = '0';
-	imem_a <= std_logic_vector(to_unsigned(0,IA_LEN));
-	imem_d <= std_logic_vector(to_unsigned(1,32));
+	iaddr <= std_logic_vector(to_unsigned(0,IA_LEN));
+	imem_d_i <= std_logic_vector(to_unsigned(1,32));
 	imem_we <= '1';
 	wait until clk = '1';
 	imem_we <= '0';
 	-- Second word
 	wait until clk = '0';
-	imem_a <= std_logic_vector(to_unsigned(1,IA_LEN));
-	imem_d <= std_logic_vector(to_unsigned(5,32));
+	iaddr <= std_logic_vector(to_unsigned(1,IA_LEN));
+	imem_d_i <= std_logic_vector(to_unsigned(5,32));
 	imem_we <= '1';
 	wait until clk = '1';
 	imem_we <= '0';
 	-- Third word
 	wait until clk = '0';
-	imem_a <= std_logic_vector(to_unsigned(2,IA_LEN));
-	imem_d <= std_logic_vector(to_unsigned(2,32));
+	iaddr <= std_logic_vector(to_unsigned(2,IA_LEN));
+	imem_d_i <= std_logic_vector(to_unsigned(2,32));
 	imem_we <= '1';
 	wait until clk = '1';
 	imem_we <= '0';
 	
 	-- Reading
-	imem_wr <= '1';
-	imem_d <= (others => 'Z');
 	-- Read first word
 	wait until clk = '0';
-	imem_a <= std_logic_vector(to_unsigned(0,IA_LEN));
-	inst <= imem_d;
+	iaddr <= std_logic_vector(to_unsigned(0,IA_LEN));
+	inst <= imem_d_o;
 	wait until clk = '1';
 	-- Read second word
 	wait until clk = '0';
-	imem_a <= std_logic_vector(to_unsigned(1,IA_LEN));
-	inst <= imem_d;
+	iaddr <= std_logic_vector(to_unsigned(1,IA_LEN));
+	inst <= imem_d_o;
 	wait until clk = '1';
 	-- Read third word
 	wait until clk = '0';
-	imem_a <= std_logic_vector(to_unsigned(2,IA_LEN));
-	inst <= imem_d;
+	iaddr <= std_logic_vector(to_unsigned(2,IA_LEN));
+	inst <= imem_d_o;
 	wait until clk = '1';
+	
+	-- Switch memory address control to CPU
+	ia_sel <= '1';
 	
 	-- wait a few clock cycles more
 	for i in 1 to 10 loop

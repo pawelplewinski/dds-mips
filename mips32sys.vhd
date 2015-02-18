@@ -9,7 +9,6 @@ entity mips32sys is
 		DA_LEN : natural := 5;
 		GPIO_LEN : natural := 8);
 	port(
-	gpo0 : out std_logic_vector(GPIO_LEN-1 downto 0);
 	
 	ibus_a_o : out std_logic_vector(IA_LEN-1 downto 0);
 	ibus_d_i : in std_logic_vector(31 downto 0);
