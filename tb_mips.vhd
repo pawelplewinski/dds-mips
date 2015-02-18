@@ -5,8 +5,8 @@ use IEEE.numeric_std.all;
 
 entity tb_mips is
     generic(
-	IA_LEN : natural := 9;
-	DA_LEN : natural := 5);
+	IA_LEN : natural := 20;
+	DA_LEN : natural := 16);
 end entity tb_mips;
 
 architecture tb_arch of tb_mips is
@@ -26,6 +26,22 @@ architecture tb_arch of tb_mips is
        resetn : in std_logic);
     end component mem32;
     
+    component mips32sys is 
+	generic (IA_LEN : natural := 9;
+		DA_LEN : natural := 6;
+		GPIO_LEN : natural := 8);
+	port(
+	gpo0 : out std_logic_vector(GPIO_LEN-1 downto 0);
+	
+	ibus_a_o : out std_logic_vector(IA_LEN-1 downto 0);
+	ibus_d_i : in std_logic_vector(31 downto 0);
+	
+	clk : in std_logic;
+	resetn : in std_logic);
+    end component mips32sys;
+    
+    signal gpo0 : std_logic_vector(7 downto 0);
+    
     signal imem_a : std_logic_vector(IA_LEN-1 downto 0);
     signal imem_d : std_logic_vector(31 downto 0);
     signal imem_we : std_logic;
@@ -40,6 +56,17 @@ begin
 	     data => imem_d,
 	     we => imem_we,
 	     wr => imem_wr,
+	     clk => clk,
+	     resetn => resetn);
+	     
+    -- Connect MIPS system
+    gut : mips32sys
+    generic map(IA_LEN => IA_LEN,
+		DA_LEN => DA_LEN,
+		GPIO_LEN => 8)
+    port map(gpo0 => gpo0,
+	     ibus_a_o => imem_a,
+	     ibus_d_i => imem_d,
 	     clk => clk,
 	     resetn => resetn);
 
