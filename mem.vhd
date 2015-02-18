@@ -4,17 +4,17 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 entity mem32 is
-  generic(ADDR_LENGTH : natural := 9);
-  port(
-       -- wishbone interface
-       wbs_addr_i : in std_logic_vector(ADDR_LENGTH-1 downto 0);
-       wbs_dat_o : out std_logic_vector(31 downto 0);
-       wbs_dat_i : in std_logic_vector(31 downto 0);
-       
-       wbs_we_i : in std_logic;	-- '1' -> enable write ; '0' -> disable write
+    generic(ADDR_LENGTH : natural := 9);
+    port(
+        -- wishbone interface
+        wbs_addr_i : in  std_logic_vector(ADDR_LENGTH-1 downto 0);
+        wbs_dat_o  : out std_logic_vector(31 downto 0);
+        wbs_dat_i  : in  std_logic_vector(31 downto 0);
+
+        wbs_we_i   : in  std_logic;	-- '1' -> enable write ; '0' -> disable write
           
-       clk : in std_logic;
-       resetn : in std_logic);
+        clk        : in  std_logic;
+        resetn     : in  std_logic);
 end entity mem32;
 
 architecture behav of mem32 is
