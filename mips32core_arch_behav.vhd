@@ -32,6 +32,9 @@ begin
 	    end loop;
 	    state := init;
 	    pgc := (others => '0');
+        dbus_a_o <= (others => '0');
+        dbus_d_o <= (others => '0');
+        ibus_a_o <= (others => '0');
 	elsif(rising_edge(clk)) then
 	    -- Instruction state machine
 	    case state is
@@ -116,9 +119,11 @@ begin
 			      reg(d_sel) := sreg xor treg;
 			-- mult
 			when "011000" =>
+                  reg(d_sel) := sreg * treg;
 			    -- Execute iterative algorithm
 			-- divu
 			when "011011" =>
+                  reg(d_sel) := sreg / treg;
 			    -- Execute iterative algorithm
 			-- mfhi
 			when "010000" =>
