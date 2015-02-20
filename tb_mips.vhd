@@ -11,26 +11,25 @@ entity tb_mips is
 end entity tb_mips;
 
 architecture tb_arch of tb_mips is
-    signal clk      : std_logic := '0';
-    signal resetn   : std_logic;
-    
-    component mem32 is
-	generic(
+
+    -------------
+    -- testset --
+    -------------
+    component testset is
+    generic(
         SYS_32      : positive := 32;
         ADDR_LENGTH : natural  :=  9);
-	port(
-		-- wishbone interface
-		wbs_addr_i  : in  std_logic_vector(ADDR_LENGTH-1 downto 0);
-		wbs_dat_i   : in  std_logic_vector(SYS_32-1 downto 0);
-		wbs_dat_o   : out std_logic_vector(SYS_32-1 downto 0);
+    port(
+        -- Wishbone bus interface (with imem)
+        wbs_addr_o : out std_logic_vector(ADDR_LENGTH-1 downto 0);  -- imem address 
+        wbs_dat_o  : out std_logic_vector(SYS_32-1 downto 0);       -- imem data
         
-		wbs_we_i    : in std_logic;	-- '1' -> enable write ; '0' -> disable write
-          
-		clk         : in std_logic;
-		resetn      : in std_logic
-	);
-    end component mem32;
+        clk        : out std_logic;
+        rst        : out std_logic);  
     
+    -----------------
+    -- MIPS system --
+    -----------------
     component mips32sys is 
 	generic (
         SYS_32      : positive := 32;
@@ -45,6 +44,19 @@ architecture tb_arch of tb_mips is
         resetn      : in  std_logic);
     end component mips32sys;
     
+    ----------------
+    -- Comparator --
+    ----------------
+    
+    
+    ---------------------------------------
+    --------------- Signals ---------------
+    ---------------------------------------
+    
+    signal tb_clk      : std_logic; 
+    signal tb_reset    : std_logic; -- high active reset
+    signal tb_resetn   : std_logic; -- low active reset
+    
     signal imem_a_i : std_logic_vector(IA_LEN-1 downto 0);
     signal imem_d_o : std_logic_vector(SYS_32-1 downto 0);
     signal imem_d_i : std_logic_vector(SYS_32-1 downto 0);
@@ -56,21 +68,24 @@ architecture tb_arch of tb_mips is
     signal iaddr    : std_logic_vector(IA_LEN-1 downto 0);
     signal ia_sel   : std_logic;
 begin
-    -- Connect memory
-    imem : mem32
-        generic map(
+
+    ----------------
+    -- Components --
+    ----------------
+
+    tst : testset
+        generic(
             SYS_32      => SYS_32,
             ADDR_LENGTH => IA_LEN)
-        port map(
-            wbs_addr_i  => imem_a_i,
-            wbs_dat_i   => imem_d_i,
-            wbs_dat_o   => imem_d_o,
-            wbs_we_i    => imem_we,
-                 
-            clk         => clk,
-            resetn      => resetn);
-	     
-    -- Connect MIPS system
+        port(
+            -- Wishbone bus interface (with imem)
+            wbs_addr_o : out std_logic_vector(ADDR_LENGTH-1 downto 0);  -- imem address 
+            wbs_dat_o  : out std_logic_vector(SYS_32-1 downto 0);       -- imem data
+            
+            clk        : out std_logic;
+            rst        : out std_logic);  
+     
+    -- Connect MIPS system (gut)
     gut : mips32sys
     generic map(
         SYS_32      => SYS_32,
@@ -82,86 +97,11 @@ begin
 	    ibus_a_o    => ibus_a_o,
 	    clk         => clk,
 	    resetn      => resetn);
+
+    -- Connect MIPS system (dut)
+    
+    -- Connect Comparator
 	     
-	-- switch between cpu and program loader
-	imem_a_i <=  ibus_a_o when ia_sel = '0' else
-	             iaddr;
 
-    -- clock generation
-    clk <= not clk after 50 ns;
-    
-    -- reset generation
-    rst : process
-        begin
-            resetn      <= '0';
-            wait for 50 ns;
-            resetn      <= '1';
-            wait;
-        end process;
-    
-    mem_access : process 
-	-- wait til the system is reset
-    begin
-        wait until resetn = '1';
-        -- Give control of the memory address to the test bench
-        ia_sel <= '0';
 
-        -- Writing ...
-        -- First word
-            imem_d_i    <= (others => '0');
-        wait until clk = '0';
-        iaddr       <= std_logic_vector(to_unsigned(0,IA_LEN));
-        imem_d_i    <= std_logic_vector(to_unsigned(0,32));
-        imem_we     <= '1';
-        wait until clk = '1';
-        imem_we     <= '0';
-        
-        -- Second word
-        wait until clk = '0';
-        iaddr       <= std_logic_vector(to_unsigned(1,IA_LEN));
-        imem_d_i    <= std_logic_vector(to_unsigned(1,32));
-        imem_we     <= '1';
-        wait until clk = '1';
-        imem_we     <= '0';
-        
-        -- Third word
-        wait until clk = '0';
-        iaddr       <= std_logic_vector(to_unsigned(2,IA_LEN));
-        imem_d_i    <= std_logic_vector(to_unsigned(2,32));
-        imem_we     <= '1';
-        wait until clk = '1';
-        imem_we     <= '0';
-        
-        -- Reading
-        -- Read first word
-        wait until clk = '0';
-        iaddr       <= std_logic_vector(to_unsigned(0,IA_LEN));
-        inst        <= imem_d_o;
-        wait until clk = '1';
-        
-        -- Read second word
-        wait until clk = '0';
-        iaddr       <= std_logic_vector(to_unsigned(1,IA_LEN));
-        inst        <= imem_d_o;
-        wait until clk = '1';
-        
-        -- Read third word
-        wait until clk = '0';
-        iaddr       <= std_logic_vector(to_unsigned(2,IA_LEN));
-        inst        <= imem_d_o;
-        wait until clk = '1';
-        
-        -- Switch memory address control to CPU
-        ia_sel <= '1';
-        
-        -- wait a few clock cycles more
-        for i in 1 to 10 loop
-            wait until clk = '0';
-            wait until clk = '1';
-        end loop;
-        
-        assert false report "End of simulation" severity warning;
-        wait;
-    end process;
-	
 end architecture tb_arch;
