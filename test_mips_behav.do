@@ -5,15 +5,17 @@ quit -sim
 echo "DO: Starting compilation."
 # -- Compile memory [entity::mem32] [architecture::behav]
 vcom mem.vhd
-
 # -- Compile MIPS core [entity::mips32core]
 vcom mips32core.vhd
-
 # -- Compile MIPS core [architecture::behavior] (behavioural)
 vcom mips32core_arch_behav.vhd
-
 # -- Compile MIPS system [architecture::struct] (structural)
 vcom mips32sys.vhd
+
+# -- Compile clock generator
+vcom clock_gen.vhd
+# -- Compile testset
+vcom testset.vhd
 
 # -- Compile testbench (top entity)
 vcom tb_mips.vhd
@@ -24,17 +26,19 @@ vsim -gui -voptargs=+acc work.tb_mips(tb_arch)
 #restart -nolist -nowave
 # -- Add waves to simulation plot
 add wave \
--logic   {sim:/tb_mips/clk                } \
--logic   {sim:/tb_mips/resetn             } \
--logic   {sim:/tb_mips/imem_we            } \
--logic   {sim:/tb_mips/ia_sel             } \
--literal -hex   {sim:/tb_mips/iaddr       } \
--literal -hex   {sim:/tb_mips/ibus_a_o    } \
--literal -hex   {sim:/tb_mips/imem_a_i    } \
--literal -dec   {sim:/tb_mips/imem_d_i    } \
--literal -dec   {sim:/tb_mips/imem_d_o    } \
--literal -dec   {sim:/tb_mips/inst        } \
-
+-logic   {sim:/tb_mips/tb_clk                   } \
+-logic   {sim:/tb_mips/tb_resetn                } \
+-logic   {sim:/tb_mips/tb_redline               } \
+-literal -hex   {sim:/tb_mips/gut/iram_addr_out } \
+-literal -hex   {sim:/tb_mips/gut/iram_data_inp } \
+-literal -hex   {sim:/tb_mips/gut/cpu/exec/state} \
+-literal -hex   {sim:/tb_mips/gut/cpu/exec/reg  } \
+-logic   {sim:/tb_mips/tb_redline               } \
+-literal -hex   {sim:/tb_mips/gut/dram_addr_out } \
+-literal -hex   {sim:/tb_mips/gut/dram_data_inp } \
+-literal -hex   {sim:/tb_mips/gut/dram_data_out } \
+-logic   {sim:/tb_mips/tb_redline               } \
+-literal -hex   {sim:/tb_mips/gut/imem/memory   } 
 
 # vsim -gui -voptargs=+acc work.mips32sys(struct)
 

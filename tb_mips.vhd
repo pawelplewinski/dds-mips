@@ -5,7 +5,7 @@ use IEEE.numeric_std.all;
 
 entity tb_mips is
     generic(
-        IA_LEN   : natural  := 20;
+        IA_LEN   : natural  :=  4;
         DA_LEN   : natural  := 16;
         SYS_32   : positive := 32);
 end entity tb_mips;
@@ -17,15 +17,14 @@ architecture tb_arch of tb_mips is
     -------------
     component testset is
     generic(
-        SYS_32      : positive := 32;
-        ADDR_LENGTH : natural  :=  9);
+        SYS_32  : positive  := 32;
+        IA_LEN  : natural   :=  9;
+        DA_LEN  : natural   :=  6);
     port(
-        -- Wishbone bus interface (with imem)
-        wbs_addr_o : out std_logic_vector(ADDR_LENGTH-1 downto 0);  -- imem address 
-        wbs_dat_o  : out std_logic_vector(SYS_32-1 downto 0);       -- imem data
-        
-        clk        : out std_logic;
-        rst        : out std_logic);  
+        clk     : out std_logic;
+        rst     : out std_logic;
+        rstn    : out std_logic);
+    end component testset;
     
     -----------------
     -- MIPS system --
@@ -37,9 +36,6 @@ architecture tb_arch of tb_mips is
 		DA_LEN      : natural  :=  6;
 		GPIO_LEN    : natural  :=  8);
 	port(
-        ibus_a_o    : out std_logic_vector(IA_LEN-1 downto 0);
-        ibus_d_i    : in  std_logic_vector(SYS_32-1 downto 0);
-        
         clk         : in  std_logic;
         resetn      : in  std_logic);
     end component mips32sys;
@@ -53,20 +49,11 @@ architecture tb_arch of tb_mips is
     --------------- Signals ---------------
     ---------------------------------------
     
-    signal tb_clk      : std_logic; 
-    signal tb_reset    : std_logic; -- high active reset
-    signal tb_resetn   : std_logic; -- low active reset
+    signal tb_clk       : std_logic; 
+    signal tb_reset     : std_logic; -- high active reset
+    signal tb_resetn    : std_logic; -- low active reset
+    signal tb_redline   : std_logic; -- DEBUG: draws a red line in the simulator
     
-    signal imem_a_i : std_logic_vector(IA_LEN-1 downto 0);
-    signal imem_d_o : std_logic_vector(SYS_32-1 downto 0);
-    signal imem_d_i : std_logic_vector(SYS_32-1 downto 0);
-    signal imem_we  : std_logic;
-
-    signal inst     : std_logic_vector(SYS_32-1 downto 0) := (others => '0');
-    
-    signal ibus_a_o : std_logic_vector(IA_LEN-1 downto 0);
-    signal iaddr    : std_logic_vector(IA_LEN-1 downto 0);
-    signal ia_sel   : std_logic;
 begin
 
     ----------------
@@ -74,16 +61,14 @@ begin
     ----------------
 
     tst : testset
-        generic(
+        generic map(
             SYS_32      => SYS_32,
-            ADDR_LENGTH => IA_LEN)
-        port(
-            -- Wishbone bus interface (with imem)
-            wbs_addr_o : out std_logic_vector(ADDR_LENGTH-1 downto 0);  -- imem address 
-            wbs_dat_o  : out std_logic_vector(SYS_32-1 downto 0);       -- imem data
-            
-            clk        : out std_logic;
-            rst        : out std_logic);  
+            IA_LEN      => IA_LEN,
+            DA_LEN      => DA_LEN)
+        port map(
+            clk         => tb_clk,
+            rst         => tb_reset,
+            rstn        => tb_resetn); 
      
     -- Connect MIPS system (gut)
     gut : mips32sys
@@ -93,15 +78,11 @@ begin
 		DA_LEN      => DA_LEN,
 		GPIO_LEN    => 8)
     port map(
-	    ibus_d_i    => imem_d_o,
-	    ibus_a_o    => ibus_a_o,
-	    clk         => clk,
-	    resetn      => resetn);
+	    clk         => tb_clk,
+	    resetn      => tb_resetn);
 
     -- Connect MIPS system (dut)
     
     -- Connect Comparator
-	     
-
 
 end architecture tb_arch;

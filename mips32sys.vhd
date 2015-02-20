@@ -6,19 +6,15 @@ use IEEE.numeric_std.all;
 
 entity mips32sys is 
     generic (
-        SYS_32   : positive := 32;
-        IA_LEN   : natural  :=  9;
-        DA_LEN   : natural  :=  5;
-        GPIO_LEN : natural  :=  8);
+        SYS_32      : positive := 32;
+        IA_LEN      : natural  :=  9;
+        DA_LEN      : natural  :=  5;
+        GPIO_LEN    : natural  :=  8
+    );
     port(
-        -- control signal for imem addr input
-        ia_select   : in  std_logic;                                    -- ('1' -> MIPS; '0' -> testset)
-
-        ibus_d_i    : in  std_logic_vector(SYS_32-1 downto 0);
-        ibus_a_o    : out std_logic_vector(IA_LEN-1 downto 0);
-      
         clk         : in  std_logic;
-        resetn      : in  std_logic);
+        resetn      : in  std_logic
+    );
 end entity mips32sys;
     
 architecture struct of mips32sys is
@@ -30,156 +26,113 @@ architecture struct of mips32sys is
     generic(
         SYS_32    : positive := 32;
         IA_LEN    : natural  :=  9;
-        DA_LEN    : natural  :=  6);
+        DA_LEN    : natural  :=  6
+    );
     port(
-        ibus_d_i  : in  std_logic_vector(SYS_32-1 downto 0);
-        ibus_a_o  : out std_logic_vector(IA_LEN-1 downto 0);
+        ibus_data_inp   : in  std_logic_vector(SYS_32-1 downto 0);
+        ibus_addr_out   : out std_logic_vector(IA_LEN-1 downto 0);
         
-        dbus_a_o  : out std_logic_vector(DA_LEN-1 downto 0);
-        dbus_d_i  : in  std_logic_vector(SYS_32-1 downto 0);
-        dbus_d_o  : out std_logic_vector(SYS_32-1 downto 0);
-        dbus_we_o : out std_logic;
+        dbus_addr_out   : out std_logic_vector(DA_LEN-1 downto 0);
+        dbus_data_inp   : in  std_logic_vector(SYS_32-1 downto 0);
+        dbus_data_out   : out std_logic_vector(SYS_32-1 downto 0);
+        dbus_wren_out   : out std_logic;
         
-        clk       : in std_logic;
-        resetn    : in std_logic);
+        clk             : in std_logic;
+        resetn          : in std_logic
+    );
     end component mips32core;
 
     ------------
     -- memory --
     ------------
     component mem32 is
-	generic(
+    generic(
         SYS_32      : positive := 32;
-        ADDR_LENGTH : natural  :=  9);
-	port(
-		-- wishbone interface
-		wbs_addr_i  : in  std_logic_vector(ADDR_LENGTH-1 downto 0);
-		wbs_dat_i   : in  std_logic_vector(SYS_32-1 downto 0);
-		wbs_dat_o   : out std_logic_vector(SYS_32-1 downto 0);
-        wbs_sel_i   : in  std_logic;        
-		wbs_we_i    : in std_logic;	                                    -- '1' -> enable write ; '0' -> disable write
+        ADDR_LENGTH : natural  :=  9
+    );
+    port(
+        -- COM bus interface
+        bus_addr_inp    : in  std_logic_vector(ADDR_LENGTH-1 downto 0);
+        bus_data_inp    : in  std_logic_vector(SYS_32-1 downto 0);
+        bus_data_out    : out std_logic_vector(SYS_32-1 downto 0);
+        bus_wren_inp    : in  std_logic;                                        -- '1' -> enable write ; '0' -> disable write
           
-		clk         : in std_logic;
-		resetn      : in std_logic);
+        clk             : in std_logic;
+        resetn          : in std_logic
+    );
     end component mem32;
     
     -- Use the different flavours of the memory component
-    for imem : mem32 use entitiy work.mem32(ibehav);
-    for dmem : mem32 use entitiy work.mem32(dbehav);
-    
---     component gpio is
---     generic( GPIO_LEN : natural := 8 );
---     port(
---                -- wishbone interface
---         wbs_addr_i : in std_logic_vector(1 downto 0);
---         wbs_dat_o : out std_logic_vector(31 downto 0);
---         wbs_dat_i : in std_logic_vector(31 downto 0);
---         
---         wbs_we_i : in std_logic;    -- '1' -> enable write ; '0' -> disable write
---        
---         io : inout std_logic_vector(GPIO_LEN-1 downto 0);
---         
---         
---         clk : in std_logic;
---         resetn : in std_logic
---     );
---     end component gpio;
-    
+    for imem : mem32 use entity work.mem32(ibehav);
+    for dmem : mem32 use entity work.mem32(dbehav);
+  
     ---------------------------------------
     --------------- Signals ---------------
     ---------------------------------------
     
-    -- bus signals for COM with imem(iram) and dmem(dram)
-    signal ibus_a_o     : std_logic_vector(IA_LEN-1 downto 0);      -- holds new instr addr for imem
+    -- bus signals for COM with RAM components from the master PoV (core -> I/O) 
+    -- imem(iram):
+    --signal iram_d_i   : std_logic_vector(SYS_32-1 downto 0);        -- [obsolete] holds new instr data for imem
+    signal iram_data_inp    : std_logic_vector(SYS_32-1 downto 0);        -- holds new instr from imem
+    signal iram_addr_out    : std_logic_vector(IA_LEN-1 downto 0);        -- holds new instr addr for imem
+    --signal iram_we_o  : std_logic;                                  -- [obsolete] holds the write enable signal from core->imem
+    -- dmem(dram):
+    signal dram_data_inp    : std_logic_vector(SYS_32-1 downto 0);
+    signal dram_addr_out    : std_logic_vector(DA_LEN-1 downto 0);
+    signal dram_data_out    : std_logic_vector(SYS_32-1 downto 0);
+    signal dram_wren_out    : std_logic;
     
-    signal dbus_a_o     : std_logic_vector(DA_LEN-1 downto 0);
-    signal dbus_d_i     : std_logic_vector(SYS_32-1 downto 0);
-    signal dbus_d_o     : std_logic_vector(SYS_32-1 downto 0);
-    signal dbus_we      : std_logic;
-    
-    -- Internal RAM related signals
-    signal iram_d_o     : std_logic_vector(SYS_32-1 downto 0);      -- holds read instruction from imem
-    
-    signal dram_d_o     : std_logic_vector(SYS_32-1 downto 0);
-    signal dram_a_i     : std_logic_vector(DA_LEN-1 downto 0);
-    signal dram_we_i    : std_logic;
-    
-    signal dperiph_d_o  : std_logic_vector(SYS_32-1 downto 0);
-    signal dperiph_d_i  : std_logic_vector(SYS_32-1 downto 0);
-
 begin
 
     -- Connect MIPS core
     cpu : mips32core
-    generic map(
-        IA_LEN      => IA_LEN,
-        DA_LEN      => DA_LEN)
-    port map(
-        ibus_a_o    => ibus_a_o,
-        dbus_a_o    => dbus_a_o,
-        dbus_d_o    => dbus_d_o,
-        
-        ibus_d_i    => iram_i_o,
-         
-        dbus_d_i    => dbus_d_i,
-        dbus_we_o   => dbus_we,
+        generic map(
+            IA_LEN          => IA_LEN,
+            DA_LEN          => DA_LEN
+        )
+        port map(
+            ibus_data_inp   => iram_data_inp,
+            ibus_addr_out   => iram_addr_out,
 
-        dbus_sel1   => wbs_sel_i,
-        dbus_sel2   => wbs_sel_i,
-        
-        clk         => clk,
-        resetn      => resetn);
+            dbus_data_inp   => dram_data_inp,
+            dbus_addr_out   => dram_addr_out,
+            dbus_data_out   => dram_data_out,
+            dbus_wren_out   => dram_wren_out,
+
+            clk             => clk,
+            resetn          => resetn
+        );
 
     -- Connect instruction memory
     imem : mem32
         generic map(
-            SYS_32      => SYS_32,
-            ADDR_LENGTH => IA_LEN)
+            SYS_32          => SYS_32,
+            ADDR_LENGTH     => IA_LEN
+        )
         port map(
-            wbs_addr_i  => imem_a_i,
-            wbs_dat_i   => imem_d_i,
-            wbs_dat_o   => iram_d_o,
-            wbs_sel_i   => dbus_sel1,
-            wbs_we_i    => imem_we,
+            bus_wren_inp    => 'Z',
+            bus_addr_inp    => iram_addr_out,
+            bus_data_inp    => (others => 'Z'),
+            bus_data_out    => iram_data_inp,
            
-            clk         => clk,
-            resetn      => resetn);
+            clk             => clk,
+            resetn          => resetn
+        );
 
     -- Connect data memory            
     dmem : mem32
         generic map(
-            SYS_32      => SYS_32,
-            ADDR_LENGTH => DA_LEN)
+            SYS_32          => SYS_32,
+            ADDR_LENGTH     => DA_LEN
+        )
         port map(
-            wbs_addr_i  => dram_a_i,
-            wbs_dat_o   => dram_d_o,
-            wbs_dat_i   => dbus_d_o,
-            wbs_sel_i   => dbus_sel2,            
-            wbs_we_i    => dram_we_i,
-            
-            clk         => clk,
-            resetn      => resetn);
-    
-    -- NO in and output from peripherals for now
-    dperiph_d_o <= (others => '-');
-    dperiph_d_i <= (others => '-');
-    
-    -- Map memory on addresses 256-512
-    --dram_a_i    <= dbus_a_o(DA_LEN-1 downto 0);
-    dram_a_i    <= dbus_a_o;
-    dram_we_i   <= dbus_we and dbus_a_o(DA_LEN-1);
-    
-    -- Map ports to signals
-    ia_sel <= ia_select;
+            bus_wren_inp    => dram_wren_out,
+            bus_addr_inp    => dram_addr_out,
+            bus_data_inp    => dram_data_out,
+            bus_data_out    => dram_data_inp,
 
-    -- Switch between RAM and peripherals
-    with dbus_a(DA_LEN-1) select dbus_d_i <=
-        dram_d_o        when '1',
-        dperiph_d_o     when '0',
-        (others => '-') when others;
-        
-    -- switch between CPU and program loader
-	imem_a_i <=  ibus_a_o when ia_sel = '0' else
-	             iaddr;
-        
+            clk             => clk,
+            resetn          => resetn
+        );
+
 end architecture struct;
