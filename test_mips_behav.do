@@ -31,8 +31,11 @@ add wave \
 -logic   {sim:/tb_mips/tb_redline               } \
 -literal -hex   {sim:/tb_mips/gut/iram_addr_out } \
 -literal -hex   {sim:/tb_mips/gut/iram_data_inp } \
--literal -hex   {sim:/tb_mips/gut/cpu/exec/state} \
--literal -hex   {sim:/tb_mips/gut/cpu/exec/reg  } \
+-literal -hex   {sim:/tb_mips/gut/cpu/state     } \
+-logic   {sim:/tb_mips/tb_redline               } \
+-literal -dec   {sim:/tb_mips/gut/cpu/reg       } \
+-literal -dec   {sim:/tb_mips/gut/cpu/sreg      } \
+-literal -dec   {sim:/tb_mips/gut/cpu/treg      } \
 -logic   {sim:/tb_mips/tb_redline               } \
 -literal -hex   {sim:/tb_mips/gut/dram_addr_out } \
 -literal -hex   {sim:/tb_mips/gut/dram_data_inp } \

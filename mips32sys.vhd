@@ -6,6 +6,7 @@ use IEEE.numeric_std.all;
 
 entity mips32sys is 
     generic (
+        PGM_FILE 	: string   := "no.file";
         SYS_32      : positive := 32;
         IA_LEN      : natural  :=  9;
         DA_LEN      : natural  :=  5;
@@ -47,6 +48,7 @@ architecture struct of mips32sys is
     ------------
     component mem32 is
     generic(
+        PGM_FILE 	: string := "no.file";
         SYS_32      : positive := 32;
         ADDR_LENGTH : natural  :=  9
     );
@@ -106,13 +108,14 @@ begin
     -- Connect instruction memory
     imem : mem32
         generic map(
+            PGM_FILE 	    => PGM_FILE,
             SYS_32          => SYS_32,
             ADDR_LENGTH     => IA_LEN
         )
         port map(
-            bus_wren_inp    => 'Z',
+            bus_wren_inp    => '0',             -- only read imem memory
             bus_addr_inp    => iram_addr_out,
-            bus_data_inp    => (others => 'Z'),
+            bus_data_inp    => (others => 'Z'), -- no write data 
             bus_data_out    => iram_data_inp,
            
             clk             => clk,

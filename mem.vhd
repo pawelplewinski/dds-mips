@@ -9,6 +9,7 @@ use std.textio.all;
 
 entity mem32 is
     generic(
+        PGM_FILE 	: string := "no.file";
         SYS_32      : positive := 32;
         ADDR_LENGTH : natural  :=  9
     );
@@ -38,10 +39,12 @@ begin
         --variable addr_ctr : unsigned(ADDR_LENGTH-1 downto 0) := (others => '0');
         variable rdline   : line;
         variable hexdata  : std_logic_vector(SYS_32-1 downto 0);
-        file mips_pgm     : text open read_mode is "gcd.txt";
+        file mips_pgm     : text open read_mode is PGM_FILE;
     begin
         if(resetn = '0') then
-            -- if reset load imem with instruction from file
+            -- if reset active then set all mem regs to 0 ..
+            memory <= (others => (others => '0'));
+            -- .. and load imem with instruction from file
             for addr_ctr in memory'range loop
                 readline(mips_pgm,rdline);
                 hread(rdline,hexdata);
@@ -50,6 +53,9 @@ begin
             end loop;
         elsif(rising_edge(clk)) then
             -- NO write enabled - only reading
+            --if(bus_wren_inp = '1') then
+            --    memory(to_integer(unsigned(wbs_addr_i))) <= bus_data_inp;
+            --end if;
         end if;
     end process mem_access;
     
@@ -71,9 +77,10 @@ begin
     mem_access : process(clk, resetn)
     begin
         if(resetn = '0') then
-            for i in 0 to ((2**ADDR_LENGTH)-1) loop
-                memory(i) <= (others => '0');
-            end loop;
+            -- if reset active then set all mem regs to 0 ..
+            memory <= (others => (others => '0'));
+            -- .. if necessary to pre-load mem: do here!
+            -- PREDLOAD routine
         elsif(rising_edge(clk)) then
             -- check write enabled
             if(bus_wren_inp = '1') then

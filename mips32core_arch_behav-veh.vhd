@@ -8,55 +8,48 @@ architecture behavior of mips32core is
     
     type reg_file_type is array (natural range <>) of u32_stype;
     -- GPREG bank
-    signal reg      : reg_file_type(1 to 31);           -- Note: $0 gives always 0 (see also below)
+    signal reg      : reg_file_type(1 to 31);
     signal sreg     : u32_stype;
     signal treg     : u32_stype;
     signal hireg    : u32_stype;
     signal loreg    : u32_stype;
     
+    type inst_state_type is (init,fetch,decode,execute,writeback);
+    signal state    : inst_state_type := init;
     
     signal pgc      : unsigned(IA_LEN-1 downto 0);      -- program counter
     signal pgc_next : unsigned(IA_LEN-1 downto 0);
     
     signal inst     : std_logic_vector(SYS_32-1 downto 0);
-        alias optc  : std_logic_vector(5 downto 0) is inst(31 downto 26);
-        alias saddr : std_logic_vector(4 downto 0) is inst(25 downto 21);
-        alias taddr : std_logic_vector(4 downto 0) is inst(20 downto 16);
-        alias daddr : std_logic_vector(4 downto 0) is inst(15 downto 11);
-        alias func  : std_logic_vector(5 downto 0) is inst(5 downto 0);
+    alias optc      : std_logic_vector(5 downto 0) is inst(31 downto 26);
+    alias saddr     : std_logic_vector(4 downto 0) is inst(25 downto 21);
+    alias taddr     : std_logic_vector(4 downto 0) is inst(20 downto 16);
+    alias daddr     : std_logic_vector(4 downto 0) is inst(15 downto 11);
+    alias func      : std_logic_vector(5 downto 0) is inst(5 downto 0);
     
-    signal eaddr    : u32_stype;
-    signal d_sel    : integer range 0 to SYS_32-1;      -- int reg file addr of the respective operand fields
-    signal s_sel    : integer range 0 to SYS_32-1;      -- int reg file addr of the respective operand fields
-    signal t_sel    : integer range 0 to SYS_32-1;      -- int reg file addr of the respective operand fields
+    signal eaddr : u32_stype;
+    signal d_sel    : integer range 0 to SYS_32-1;
+    signal s_sel    : integer range 0 to SYS_32-1;
+    signal t_sel    : integer range 0 to SYS_32-1;
     signal imval    : unsigned(25 downto 0);            -- stores the immediate value
 
     -- DEBUG signals and variables
-    type inst_state_type is (init,fetch,decode,execute,writeback);
-    signal state    : inst_state_type := init;
-    
-    type op_type is (nop_op, add_op, addi_op, and_op, andi_op, beq_op, bgtz_op, divu_op, j_op, lui_op, lw_op, mfhi_op, mflo_op, or_op, ori_op, sub_op, sw_op, xor_op);
-    signal op_state : op_type := nop_op;
-    
     signal done     : boolean := false;
-    
-
-    
 begin
-
-    -- if operand field points to 0 (i.e. $0) then return always the value 0
     sreg <= (others => '0') when s_sel = 0      else reg(s_sel);
     treg <= (others => '0') when t_sel = 0      else reg(t_sel);
     
     dbus_addr_out <= std_logic_vector(eaddr(DA_LEN-1 downto 0));
 
     exec : process(clk, resetn)
-        variable addres : unsigned(32 downto 0);    -- add result
+        variable addres : unsigned(32 downto 0);    -- 
         variable mres   : unsigned(63 downto 0);    -- mult result
     begin
         if(resetn = '0') then
             state           <= init;
-            reg             <= (others => (others => '0'));
+            for i in 1 to SYS_32-1 loop
+                reg(i)      <= (others => '0');
+            end loop;
             pgc             <= (others => '0');
             imval           <= (others => '0');
             hireg           <= (others => '0');
@@ -134,13 +127,13 @@ begin
                                     when "100010" =>
                                           addres := ('0'&sreg) - ('0'&treg);
                                           reg(d_sel) <= addres(31 downto 0);
-                                    -- and (bitwise)
+                                    -- bitwise and
                                     when "100100" =>
                                           reg(d_sel) <= sreg and treg;
-                                    -- or (bitwise)
+                                    -- bitwise or
                                     when "100101" =>
                                           reg(d_sel) <= sreg or treg;
-                                    -- xor (bitwise)
+                                    -- bitwise xor
                                     when "100110" =>
                                           reg(d_sel) <= sreg xor treg;
                                     -- mult
@@ -236,7 +229,7 @@ begin
                             end if;
                         -- SW
                         when  "101011" =>
-                            dbus_wren_out <= '0';       -- 
+                            dbus_wren_out <= '0';
                         when others => null;
                     end case;
                     pgc <= pgc_next;

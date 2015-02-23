@@ -5,6 +5,7 @@ use IEEE.numeric_std.all;
 
 entity tb_mips is
     generic(
+        PGM_FILE : string   := "gcd.txt";   -- Assembly test code file (path)
         IA_LEN   : natural  :=  4;
         DA_LEN   : natural  := 16;
         SYS_32   : positive := 32);
@@ -17,13 +18,14 @@ architecture tb_arch of tb_mips is
     -------------
     component testset is
     generic(
-        SYS_32  : positive  := 32;
-        IA_LEN  : natural   :=  9;
-        DA_LEN  : natural   :=  6);
+        PGM_FILE : string    := "no.file";
+        SYS_32   : positive  := 32;
+        IA_LEN   : natural   :=  9;
+        DA_LEN   : natural   :=  6);
     port(
-        clk     : out std_logic;
-        rst     : out std_logic;
-        rstn    : out std_logic);
+        clk      : out std_logic;
+        rst      : out std_logic;
+        rstn     : out std_logic);
     end component testset;
     
     -----------------
@@ -31,6 +33,7 @@ architecture tb_arch of tb_mips is
     -----------------
     component mips32sys is 
 	generic (
+        PGM_FILE    : string   := "no.file";
         SYS_32      : positive := 32;
         IA_LEN      : natural  :=  9;
 		DA_LEN      : natural  :=  6;
@@ -62,6 +65,7 @@ begin
 
     tst : testset
         generic map(
+            PGM_FILE    => PGM_FILE,
             SYS_32      => SYS_32,
             IA_LEN      => IA_LEN,
             DA_LEN      => DA_LEN)
@@ -72,14 +76,15 @@ begin
      
     -- Connect MIPS system (gut)
     gut : mips32sys
-    generic map(
-        SYS_32      => SYS_32,
-        IA_LEN      => IA_LEN,
-		DA_LEN      => DA_LEN,
-		GPIO_LEN    => 8)
-    port map(
-	    clk         => tb_clk,
-	    resetn      => tb_resetn);
+        generic map(
+            PGM_FILE    => PGM_FILE,
+            SYS_32      => SYS_32,
+            IA_LEN      => IA_LEN,
+            DA_LEN      => DA_LEN,
+            GPIO_LEN    => 8)
+        port map(
+            clk         => tb_clk,
+            resetn      => tb_resetn);
 
     -- Connect MIPS system (dut)
     

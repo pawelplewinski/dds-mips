@@ -8,13 +8,14 @@ use IEEE.numeric_std.all;
 
 entity testset is
     generic(
-        SYS_32  : positive  := 32;
-        IA_LEN  : natural   :=  9;
-        DA_LEN  : natural   :=  6);
+        PGM_FILE : string    := "no.file";
+        SYS_32   : positive  := 32;
+        IA_LEN   : natural   :=  9;
+        DA_LEN   : natural   :=  6);
     port(
-        clk     : out std_logic;
-        rst     : out std_logic;
-        rstn    : out std_logic);
+        clk      : out std_logic;
+        rst      : out std_logic;
+        rstn     : out std_logic);
 end entity testset;
 
 architecture behav of testset is
@@ -34,9 +35,9 @@ architecture behav of testset is
         clk         : out std_logic);
     end component clock_gen;
     
-    ----------------------------------------------
-    ------------------ Signalss ------------------
-    ----------------------------------------------
+    ---------------------------------------------
+    ------------------ Signals ------------------
+    ---------------------------------------------
     
     signal ts_reset  : std_logic;
     signal ts_resetn : std_logic;
