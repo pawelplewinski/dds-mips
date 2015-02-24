@@ -26,23 +26,24 @@ vsim -gui -voptargs=+acc work.tb_mips(tb_arch)
 #restart -nolist -nowave
 # -- Add waves to simulation plot
 add wave \
--logic   {sim:/tb_mips/tb_clk                   } \
--logic   {sim:/tb_mips/tb_resetn                } \
--logic   {sim:/tb_mips/tb_redline               } \
--literal -hex   {sim:/tb_mips/gut/iram_addr_out } \
--literal -hex   {sim:/tb_mips/gut/iram_data_inp } \
--literal -sym   {sim:/tb_mips/gut/cpu/state     } \
--literal -sym   {sim:/tb_mips/gut/cpu/op_state  } \
--logic   {sim:/tb_mips/tb_redline               } \
--literal -dec   {sim:/tb_mips/gut/cpu/reg       } \
--literal -dec   {sim:/tb_mips/gut/cpu/sreg      } \
--literal -dec   {sim:/tb_mips/gut/cpu/treg      } \
--logic   {sim:/tb_mips/tb_redline               } \
--literal -hex   {sim:/tb_mips/gut/dram_addr_out } \
--literal -hex   {sim:/tb_mips/gut/dram_data_inp } \
--literal -hex   {sim:/tb_mips/gut/dram_data_out } \
--logic   {sim:/tb_mips/tb_redline               } \
--literal -hex   {sim:/tb_mips/gut/imem/memory   } 
+-logic   {sim:/tb_mips/tb_clk                           } \
+-logic   {sim:/tb_mips/tb_resetn                        } \
+-logic   {sim:/tb_mips/tb_redline                       } \
+-literal -hex   {sim:/tb_mips/gut/iram_addr_out         } \
+-literal -hex   {sim:/tb_mips/gut/iram_data_inp         } \
+-literal -sym   {sim:/tb_mips/gut/cpu/state             } \
+-literal -sym   {sim:/tb_mips/gut/cpu/exec/state_next   } \
+-literal -sym   {sim:/tb_mips/gut/cpu/op_state          } \
+-logic   {sim:/tb_mips/tb_redline                       } \
+-literal -dec   {sim:/tb_mips/gut/cpu/reg               } \
+-literal -dec   {sim:/tb_mips/gut/cpu/sreg              } \
+-literal -dec   {sim:/tb_mips/gut/cpu/treg              } \
+-logic   {sim:/tb_mips/tb_redline                       } \
+-literal -hex   {sim:/tb_mips/gut/dram_addr_out         } \
+-literal -hex   {sim:/tb_mips/gut/dram_data_out         } \
+-literal -hex   {sim:/tb_mips/gut/dram_data_inp         } \
+-logic   {sim:/tb_mips/tb_redline                       } \
+-literal -hex   {sim:/tb_mips/gut/imem/memory           } 
 
 # vsim -gui -voptargs=+acc work.mips32sys(struct)
 
@@ -64,4 +65,4 @@ add wave \
 # force -freeze sim:/mem32/wbs_addr_i      00000000000000000000000000000001 0
 
 # should run at least 1000 x period
-run {1700 ns}
+run {3500 ns}

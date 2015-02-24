@@ -8,7 +8,7 @@ architecture behavior of mips32core is
     -- Type declarations
     subtype u32_stype       is unsigned(31 downto 0);    
     type reg_file_type      is array (natural range <>) of u32_stype;
-    type op_type            is (nop_op, add_op, addi_op, and_op, andi_op, beq_op, bgtz_op, divu_op, j_op, lui_op, lw_op, mfhi_op, mflo_op, mult_op, or_op, ori_op, sub_op, sw_op, xor_op, r_nop);
+    type op_type            is (no_op, add_op, addi_op, and_op, andi_op, beq_op, bgtz_op, divu_op, j_op, lui_op, lw_op, mfhi_op, mflo_op, mult_op, or_op, ori_op, sub_op, sw_op, syscall, xor_op, r_nop);
     type inst_state_type    is (init,fetch,decode,execute,writeback);
 
     function getOp (op_code_tmp : std_logic_vector(5 downto 0); func_tmp : std_logic_vector(5 downto 0)) return op_type is
@@ -18,6 +18,7 @@ architecture behavior of mips32core is
             -- R instruction (mult,add,and,or,xor,sub,mfhi,mflo,divu)
             when "000000" =>
                 case func_tmp is
+                    when "001100" =>    return_val := syscall;   -- syscall
                     when "100000" =>    return_val :=  add_op;   -- add
                     when "100010" =>    return_val :=  sub_op;   -- sub
                     when "100100" =>    return_val :=  and_op;   -- and (bitwise)
@@ -28,7 +29,7 @@ architecture behavior of mips32core is
                     when "010000" =>    return_val := mfhi_op;   -- mfhi
                     when "010010" =>    return_val := mflo_op;   -- mflo
                     -- other r instructions are not implemented
-                    when others   =>    return_val :=   r_nop;   --
+                    when others   =>    return_val :=    no_op;   --
                 end case;
             -- J instruction
             when "000010" =>            return_val :=    j_op;   -- j
@@ -45,7 +46,7 @@ architecture behavior of mips32core is
             when "100011" =>            return_val :=   lw_op;   -- lw
             when "101011" =>            return_val :=   sw_op;   -- sw
             -- Other instructions not implemented, count as NOP
-            when others =>              return_val := nop_op;
+            when others =>              return_val := no_op;     --
         end case;
         return return_val;
     end getOp;
@@ -72,15 +73,14 @@ architecture behavior of mips32core is
     signal d_sel    : integer range 0 to 31;      -- int reg file addr of the respective operand fields
     signal s_sel    : integer range 0 to 31;      -- int reg file addr of the respective operand fields
     signal t_sel    : integer range 0 to 31;      -- int reg file addr of the respective operand fields
-    signal imval    : unsigned(25 downto 0);            -- stores the immediate value
 
+    signal imval    : unsigned(25 downto 0);      -- stores the immediate value
+	signal mductr   : integer range 0 to 33 := 0; -- counter to simulate multi-cycle R operations
+    
     -- DEBUG signals and variables
     signal state    : inst_state_type := init;
-    
-    
-    signal op_state : op_type := nop_op;
-    
-    signal done     : boolean := false;
+    signal op_state : op_type := no_op;
+    signal intrp    : boolean := false;
     
 
     
@@ -93,8 +93,9 @@ begin
     dbus_addr_out <= std_logic_vector(eaddr(DA_LEN-1 downto 0));
 
     exec : process(clk, resetn)
-        variable addres : unsigned(32 downto 0);    -- add result
-        variable mres   : unsigned(63 downto 0);    -- mult result
+        variable addres     : unsigned(32 downto 0);    -- add result
+        variable mres       : unsigned(63 downto 0);    -- mult result
+        variable state_next : inst_state_type := init;  -- 
     begin
         if(resetn = '0') then
             state           <= init;
@@ -103,20 +104,20 @@ begin
             imval           <= (others => '0');
             hireg           <= (others => '0');
             loreg           <= (others => '0');
-            dbus_addr_out   <= (others => '0');
+            eaddr           <= (others => '0'); -- dbus_addr_out   <= (others => '0');
             dbus_data_out   <= (others => '0');
             ibus_addr_out   <= (others => '0');
             dbus_wren_out   <= '0';
+            mductr <= 0;
         elsif(rising_edge(clk)) then
             -- Instruction state machine
             case state is
                 when init =>
                     state       <= fetch;               -- Update state
                 when fetch => 
-                    state       <= decode;              -- Update state
                     inst        <= ibus_data_inp;
+                    state       <= decode;              -- Update state
                 when decode =>
-                    state       <= execute;             -- Update state
                     op_state    <= getOp(optc,func);    -- Update op state
                     -- The decoding stage extracts important information from instruction code
                     -- Normally, during this step all of the control signals in the DP are configured
@@ -156,59 +157,71 @@ begin
                             t_sel <= 0;
                             s_sel <= 0;
                     end case;
+                    state       <= execute;             -- Update state
                 when execute => 
                     -- Now the instruction is actually executed
-                    state <= writeback; -- Update state
+                    state_next := writeback; -- Update state
                     case optc is
                         -- Special
                         when "000000" =>
                             -- syscall;
-                            if func = "001100" then
+                            if      func = "001100" then
                                 --int0 <= '1';
-                                done <= false;
-                                elsif d_sel /= 0 then
-                                -- Don't do anything if d_sel is pointing to $0 (can't write to this reg)
-                                    case func is
-                                        -- add
-                                        when "100000" =>
-                                              addres := ('0'&sreg) + ('0'&treg);
-                                              reg(d_sel) <= addres(31 downto 0);
-                                        -- sub
-                                        when "100010" =>
-                                              addres := ('0'&sreg) - ('0'&treg);
-                                              reg(d_sel) <= addres(31 downto 0);
-                                        -- and (bitwise)
-                                        when "100100" =>
-                                              reg(d_sel) <= sreg and treg;
-                                        -- or (bitwise)
-                                        when "100101" =>
-                                              reg(d_sel) <= sreg or treg;
-                                        -- xor (bitwise)
-                                        when "100110" =>
-                                              reg(d_sel) <= sreg xor treg;
-                                        -- mult
-                                        when "011000" =>
-                                            mres := sreg * treg;
-                                            hireg <= mres(63 downto 32);
-                                            loreg <= mres(31 downto 0);
-                                            -- Execute iterative algorithm
-                                        -- divu
-                                        when "011011" =>
-                                            hireg <= ((31 downto 0 => '0') & sreg) mod treg;
-                                            loreg <= ((31 downto 0 => '0') & sreg) / treg;
-                                            -- Execute iterative algorithm
-                                        -- mfhi
-                                        when "010000" =>
-                                            reg(d_sel) <= hireg;
-                                        -- mflo
-                                        when "010010" =>
-                                            reg(d_sel) <= loreg;
-                                        -- other r instructions are not implemented
-                                        when others   => null;    
-                                    end case;
+                                intrp <= false;
+                            -- mult
+                            elsif   func = "011000" then
+                                mres := sreg * treg;
+                                hireg <= mres(63 downto 32);
+                                loreg <= mres(31 downto 0);
+                                -- Execute iterative algorithm
+                            -- divu
+                            elsif   func = "011011" then
+                                hireg <= sreg mod treg;
+                                loreg <= sreg / treg;
+                                -- overwrite state_next to simulate multi-cycle R operation
+                                if mductr < 32 then
+                                    mductr <= mductr + 1;
+                                    state_next := execute;          -- still processing
                                 else
-                                    -- DEBUG: sys error interrupt
-                                    assert false report "DEBUG: Detected write attempt for $0 (R instr)." severity error;    
+                                    mductr <= 0;
+                                    state_next := writeback;        -- operation finished   
+                                end if;
+                                op_state    <= getOp(optc,func);    -- Update op state
+                                -- Execute iterative algorithm
+                            -- remaining functions
+                            elsif d_sel /= 0 then
+                            -- Don't do anything if d_sel is pointing to $0 (can't write to this reg)
+                                case func is
+                                    -- add
+                                    when "100000" =>
+                                          addres := ('0'&sreg) + ('0'&treg);
+                                          reg(d_sel) <= addres(31 downto 0);
+                                    -- sub
+                                    when "100010" =>
+                                          addres := ('0'&sreg) - ('0'&treg);
+                                          reg(d_sel) <= addres(31 downto 0);
+                                    -- and (bitwise)
+                                    when "100100" =>
+                                          reg(d_sel) <= sreg and treg;
+                                    -- or (bitwise)
+                                    when "100101" =>
+                                          reg(d_sel) <= sreg or treg;
+                                    -- xor (bitwise)
+                                    when "100110" =>
+                                          reg(d_sel) <= sreg xor treg;
+                                    -- mfhi
+                                    when "010000" =>
+                                        reg(d_sel) <= hireg;
+                                    -- mflo
+                                    when "010010" =>
+                                        reg(d_sel) <= loreg;
+                                    -- other r instructions are not implemented
+                                    when others   => null;    
+                                end case;
+                            elsif inst /= "00000000000000000000000000000000" then
+                                -- If this is not a NOOP then there's an error
+                                -- DEBUG: sys error interrupt
+                                assert false report "DEBUG: Detected write attempt for $0 (R instr)." severity error;    
                             end if;
                             pgc_next <= pgc + 1;
                         -- J instruction
@@ -270,14 +283,13 @@ begin
                         -- Other instructions not implemented, count as NOP
                         when others => null;
                     end case;
+                    state <= state_next;    -- Update next state
                 when writeback =>
-                    state <= fetch;     -- Update state
                     case optc is
                         -- syscall
                         when  "000000" =>
                             if(func = "001100") then
-                                --int0 <= '0';
-                                done <= true;
+                                intrp <= true;        --int0 <= '0';
                             end if;
                         -- LW
                         when  "100011" =>
@@ -293,8 +305,9 @@ begin
                             dbus_wren_out <= '0';       -- 
                         when others => null;
                     end case;
-                    pgc <= pgc_next;
-                    ibus_addr_out <= std_logic_vector(pgc_next);
+                    pgc <= pgc_next;                                -- Update program counter
+                    ibus_addr_out <= std_logic_vector(pgc_next);    -- Assign program counter to output
+                    state <= fetch;                                 -- Update state
             end case;
         end if;
     end process exec;
