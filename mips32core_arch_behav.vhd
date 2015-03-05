@@ -79,6 +79,7 @@ architecture behavior of mips32core is
     
     -- DEBUG signals and variables
     signal state    : inst_state_type := init;
+    signal state_nxt: inst_state_type := init;    
     signal op_state : op_type := no_op;
     signal intrp    : boolean := false;
     
@@ -95,6 +96,7 @@ begin
     exec : process(clk, resetn)
         variable addres     : unsigned(32 downto 0);    -- add result
         variable mres       : unsigned(63 downto 0);    -- mult result
+        variable state_var  : inst_state_type := init;  --
         variable state_next : inst_state_type := init;  -- 
     begin
         if(resetn = '0') then
@@ -111,12 +113,14 @@ begin
             mductr <= 0;
         elsif(rising_edge(clk)) then
             -- Instruction state machine
-            case state is
+            state       <= state_nxt;
+            state_var   := state_nxt;
+            case state_var is
                 when init =>
-                    state       <= fetch;               -- Update state
+                    state_nxt       <= fetch;           -- Update state
                 when fetch => 
                     inst        <= ibus_data_inp;
-                    state       <= decode;              -- Update state
+                    state_nxt       <= decode;          -- Update state
                 when decode =>
                     op_state    <= getOp(optc,func);    -- Update op state
                     -- The decoding stage extracts important information from instruction code
@@ -157,7 +161,7 @@ begin
                             t_sel <= 0;
                             s_sel <= 0;
                     end case;
-                    state       <= execute;             -- Update state
+                    state_nxt       <= execute;             -- Update state
                 when execute => 
                     -- Now the instruction is actually executed
                     state_next := writeback; -- Update state
@@ -283,7 +287,7 @@ begin
                         -- Other instructions not implemented, count as NOP
                         when others => null;
                     end case;
-                    state <= state_next;    -- Update next state
+                    state_nxt <= state_next;    -- Update next state
                 when writeback =>
                     case optc is
                         -- syscall
@@ -307,7 +311,7 @@ begin
                     end case;
                     pgc <= pgc_next;                                -- Update program counter
                     ibus_addr_out <= std_logic_vector(pgc_next);    -- Assign program counter to output
-                    state <= fetch;                                 -- Update state
+                    state_nxt <= fetch;                             -- Update state (i.e. start all over again)
             end case;
         end if;
     end process exec;
