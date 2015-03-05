@@ -47,6 +47,7 @@ architecture tb_arch of tb_mips is
     -- Comparator --
     ----------------
     
+    --for dut : mips32core use entity work.mips32core(structural);
     
     ---------------------------------------
     --------------- Signals ---------------
@@ -75,7 +76,7 @@ begin
             rstn        => tb_resetn); 
      
     -- Connect MIPS system (gut)
-    gut : mips32sys
+    gut : entity work.mips32sys(gut_struct)
         generic map(
             PGM_FILE    => PGM_FILE,
             SYS_32      => SYS_32,
@@ -87,6 +88,16 @@ begin
             resetn      => tb_resetn);
 
     -- Connect MIPS system (dut)
+    dut : entity work.mips32sys(dut_struct)
+        generic map(
+            PGM_FILE    => PGM_FILE,
+            SYS_32      => SYS_32,
+            IA_LEN      => IA_LEN,
+            DA_LEN      => DA_LEN,
+            GPIO_LEN    => 8)
+        port map(
+            clk         => tb_clk,
+            resetn      => tb_resetn);
     
     -- Connect Comparator
 
