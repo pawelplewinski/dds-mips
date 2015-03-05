@@ -3,6 +3,8 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
+-- separate compare unit for instr like bgtz
+
 entity mips32_cmp is
     port(
     cmp_l_inp : in std_logic_vector(31 downto 0);

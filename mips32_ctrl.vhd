@@ -61,7 +61,7 @@ architecture behavior of mips32_ctrl is
                     when "100101" =>    return_val :=   or_op;   -- or (bitwise)
                     when "100110" =>    return_val :=  xor_op;   -- xor (bitwise)
                     when "011000" =>    return_val := mult_op;   -- mult
-                    when "011011" =>    return_val :=  xor_op;   -- divu
+                    when "011011" =>    return_val := divu_op;   -- divu
                     when "010000" =>    return_val := mfhi_op;   -- mfhi
                     when "010010" =>    return_val := mflo_op;   -- mflo
                     -- other r instructions are not implemented

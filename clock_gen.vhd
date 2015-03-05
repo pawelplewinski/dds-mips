@@ -3,6 +3,8 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
+-- generates a reset dominated clock signal
+
 entity clock_gen is
     generic(
         period  : time := 10 ns);

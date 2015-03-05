@@ -6,6 +6,7 @@ use ieee.std_logic_textio.all;
 library std;
 use std.textio.all;
 
+-- includes the imem and the dmem architecture (which share the same interface)
 
 entity mem32 is
     generic(
