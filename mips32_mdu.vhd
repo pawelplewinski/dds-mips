@@ -13,77 +13,106 @@ entity mips32_mdu is
     mdu_hi_out : out std_logic_vector(31 downto 0);
     mdu_lo_out : out std_logic_vector(31 downto 0);
     
-    mode_inp   : in  std_logic;
-    rdy_out    : out std_logic;
+    mode_inp   : in  std_logic;                         -- selects mult(0) or divu(0)
     start_inp  : in  std_logic;
+    rdy_out    : out std_logic;
     
     clk        : in  std_logic;
     resetn     : in  std_logic);
 end entity mips32_mdu;
 
 architecture behavior of mips32_mdu is
-    signal hireg     : unsigned(31 downto 0);
-    signal hireg_nxt : unsigned(31 downto 0);
-    signal loreg     : unsigned(31 downto 0);
-    signal ctr       : integer range 31 downto 0 := 0;
-    signal rdy       : std_logic := '0';
+    signal hireg         : std_logic_vector(31 downto 0);   -- used for divu
+    signal hireg_nxt     : unsigned(31 downto 0);
+    signal loreg         : std_logic_vector(31 downto 0);
+    signal ctr           : integer range 31 downto 0;
+    signal rdy           : std_logic;
+    signal start_inp_tmp : std_logic;
     --signal cmode     : std_logic;
 begin
-    calc : process(clk, resetn) 
+    calc : process(clk, resetn)
+        variable mres : signed(63 downto 0);
+        variable strt : std_logic;
     begin
         if resetn = '0' then
-            hireg <= (others => '0');
-            loreg <= (others => '0');
-            ctr   <= 0;
-            rdy   <= '0';
+            hireg         <= (others => '0');
+            loreg         <= (others => '0');
+            ctr           <= 0;
+            rdy           <= '0';
+            start_inp_tmp <= '0';
         elsif rising_edge(clk) then
-            if ctr > 0 then
-                if ctr = 1 then
-                    rdy <= '1';
-                else
-                    rdy <= '0';
-                end if;
-                -- R >= D
-                if hireg_nxt >= unsigned(mdu_r_inp) then
-                    hireg      <= hireg_nxt - unsigned(mdu_r_inp);
-                    loreg(ctr) <= '1';
-                else
-                    hireg      <= hireg_nxt;
-                    loreg(ctr) <= '0';
-                end if;
-                ctr <= ctr - 1;
-            elsif rdy = '1' then
-                rdy <= '0';
-                -- R >= D
-                if hireg_nxt >= unsigned(mdu_r_inp) then
-                    hireg      <= hireg_nxt - unsigned(mdu_r_inp);
-                    loreg(ctr) <= '1';
-                else
-                    hireg      <= hireg_nxt;
-                    loreg(ctr) <= '0';
-                end if;
-                ctr <= 0;
+            if start_inp = '1' then 
+                strt := '1'; 
             else
-                rdy <= '0';
-                if start_inp = '1' then
-                    if mdu_r_inp /= (31 downto 0 => '0') then
-                        ctr <= 31;
-                    else
-                        ctr <= 0;
-                    end if;
-                    hireg <= (others => '0');
-                    loreg <= (others => '0');
-                else
-                    ctr   <= 0;
-                    hireg <= hireg;
-                    loreg <= loreg;
-                end if;
+                strt := start_inp_tmp;
             end if;
+            if mode_inp = '1' and strt = '1' then -- divu
+                if ctr > 0 then
+                    if ctr = 1 then
+                        rdy <= '1';
+                    else
+                        rdy <= '0';
+                    end if;
+                    -- R >= D
+                    if hireg_nxt >= unsigned(mdu_r_inp) then
+                        hireg      <= std_logic_vector(hireg_nxt - unsigned(mdu_r_inp));
+                        loreg(ctr) <= '1';
+                    else
+                        hireg      <= std_logic_vector(hireg_nxt);
+                        loreg(ctr) <= '0';
+                    end if;
+                    ctr <= ctr - 1;
+                elsif rdy = '1' then
+                    rdy  <= '0';
+                    strt := '0';
+                    -- R >= D
+                    if hireg_nxt >= unsigned(mdu_r_inp) then
+                        hireg      <= std_logic_vector(hireg_nxt - unsigned(mdu_r_inp));
+                        loreg(ctr) <= '1';
+                    else
+                        hireg      <= std_logic_vector(hireg_nxt);
+                        loreg(ctr) <= '0';
+                    end if;
+                    ctr <= 0;
+                else -- ctr = 0
+                    rdy <= '0';
+                    if start_inp = '1' then
+                        if mdu_r_inp /= (31 downto 0 => '0') then
+                            ctr <= 31;
+                        else
+                            ctr <= 0;
+                        end if;
+                        hireg <= (others => '0');
+                        loreg <= (others => '0');
+                    else
+                        ctr   <= 0;
+                        hireg <= hireg;
+                        loreg <= loreg;
+                    end if;
+                end if;
+            elsif strt = '1' then -- mult
+                -- ctr <= ctr + 1;
+                -- if ctr = 31 then 
+                    -- ctr <= 0;
+                    -- rdy <= '1';
+                -- else
+                    -- rdy  <= '0';
+                    -- strt := '0';
+                -- end if;
+                -- mres  := signed(mdu_l_inp) * signed(mdu_r_inp);
+                -- hireg <= std_logic_vector(mres(63 downto 32));
+                -- loreg <= std_logic_vector(mres(31 downto  0));
+                -- assert false report "DEBUG: MULTMULTMULTMULTMULTMULTMULTMULTMULTMULTMULT" severity warning;
+            end if;
+            start_inp_tmp <= strt;
         end if;
     end process calc;
-    
-    hireg_nxt  <= hireg(30 downto 0) & mdu_l_inp(ctr);
+
+    -- read inputs into local regs    
     rdy_out    <= rdy;
     mdu_hi_out <= std_logic_vector(hireg);
     mdu_lo_out <= std_logic_vector(loreg);
+    -- for divu
+    hireg_nxt  <= unsigned(hireg(30 downto 0) & mdu_l_inp(ctr));
+    
 end architecture behavior;

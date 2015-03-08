@@ -7,18 +7,16 @@ architecture structural of mips32core is
 
     component mips32_dp is
     generic(
-        WORD_LEN  : natural := 32;
-        IA_LEN    : natural :=  9;
-        DA_LEN    : natural :=  6);
+        IA_LEN    : natural :=  9);
     port(
         -- Data bus
-        dbus_addr_out  : out std_logic_vector(DA_LEN-1 downto 0);
-        dbus_data_out  : out std_logic_vector(WORD_LEN-1 downto 0);
-        dbus_data_inp  : in  std_logic_vector(WORD_LEN-1 downto 0);
+        dbus_addr_out  : out std_logic_vector(31 downto 0);
+        dbus_data_out  : out std_logic_vector(31 downto 0);
+        dbus_data_inp  : in  std_logic_vector(31 downto 0);
         
         -- Instruction bus
         ibus_addr_out  : out std_logic_vector(IA_LEN-1 downto 0);
-        ibus_data_inp  : in  std_logic_vector(WORD_LEN-1 downto 0);
+        ibus_data_inp  : in  std_logic_vector(31 downto 0);
     
         -- Register control signals
         den  : in std_logic;
@@ -37,8 +35,9 @@ architecture structural of mips32core is
         alu_r_sel_inp    : in std_logic;
         
         -- MDU control
-        mdu_rdy_out   : out std_logic;
-        mdu_start_inp : in  std_logic;
+        mdu_start_inp    : in  std_logic;
+        mdu_func_sel_inp : in  std_logic;
+        mdu_rdy_out      : out std_logic;
     
         -- comparator control
         cmp_r_sel_inp : in std_logic;
@@ -76,9 +75,10 @@ architecture structural of mips32core is
         alu_r_sel_out    : out std_logic;
         
         -- MDU control
-        mdu_rdy_inp   : in  std_logic;
-        mdu_start_out : out std_logic;
-    
+        mdu_rdy_inp      : in  std_logic;
+        mdu_start_out    : out std_logic;
+        mdu_func_sel_out : out std_logic;
+        
         -- comparator control
         cmp_r_sel_out : out std_logic;
         
@@ -86,7 +86,7 @@ architecture structural of mips32core is
         cmp_eq_inp : in std_logic;
         cmp_gt_inp : in std_logic;
         
-        -- Controller data in
+        -- Controller data
         ctrl_data_out : out std_logic_vector(31 downto 0);
         
         --int0 : out std_logic;
@@ -107,9 +107,10 @@ architecture structural of mips32core is
     signal alu_l_sel    : std_logic;
     signal alu_r_sel    : std_logic;
     
-    signal mdu_rdy   : std_logic;
-    signal mdu_start : std_logic;
-
+    signal mdu_rdy      : std_logic;
+    signal mdu_start    : std_logic;
+    signal mdu_func_sel : std_logic;
+    
     signal cmp_r_sel : std_logic;
 
     signal cmp_eq : std_logic;
@@ -119,9 +120,7 @@ architecture structural of mips32core is
 begin
     datapath : mips32_dp
     generic map(
-        WORD_LEN         => SYS_32,
-        IA_LEN           => IA_LEN,
-        DA_LEN           => DA_LEN)
+        IA_LEN           => IA_LEN)
     port map(
         dbus_addr_out    => dbus_addr_out,
         dbus_data_out    => dbus_data_out,
@@ -140,6 +139,7 @@ begin
         alu_r_sel_inp    => alu_r_sel,
         mdu_start_inp    => mdu_start,
         mdu_rdy_out      => mdu_rdy,
+        mdu_func_sel_inp => mdu_func_sel,
         cmp_r_sel_inp    => cmp_r_sel,
         cmp_eq_out       => cmp_eq,
         cmp_gt_out       => cmp_gt,
@@ -162,6 +162,7 @@ begin
         alu_r_sel_out    => alu_r_sel,
         mdu_start_out    => mdu_start,
         mdu_rdy_inp      => mdu_rdy,
+        mdu_func_sel_out => mdu_func_sel,
         cmp_r_sel_out    => cmp_r_sel,
         cmp_eq_inp       => cmp_eq,
         cmp_gt_inp       => cmp_gt,

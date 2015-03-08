@@ -23,8 +23,9 @@ entity mips32_ctrl is
         tsrc : out std_logic_vector(1 downto 0);                -- t source
         
         -- MDU control
-        mdu_rdy_inp   : in  std_logic;
-        mdu_start_out : out std_logic;
+        mdu_rdy_inp      : in  std_logic;
+        mdu_start_out    : out std_logic;
+        mdu_func_sel_out : out std_logic;
         
         -- Status signals
         cmp_eq_inp : in std_logic;
@@ -33,7 +34,7 @@ entity mips32_ctrl is
         -- comparator control
         cmp_r_sel_out: out std_logic;
         
-        -- Controller data in
+        -- Controller data 
         ctrl_data_out : out std_logic_vector(31 downto 0);
         
         dbus_wren_out : out std_logic;
@@ -44,7 +45,7 @@ end entity mips32_ctrl;
 
 architecture behavior of mips32_ctrl is
 
-    type op_type            is (no_op, add_op, addi_op, and_op, andi_op, beq_op, bgtz_op, divu_op, j_op, lui_op, lw_op, mfhi_op, mflo_op, mult_op, or_op, ori_op, sub_op, sw_op, syscall, xor_op, r_nop);
+    type op_type is (no_op, add_op, addi_op, and_op, andi_op, beq_op, bgtz_op, divu_op, j_op, lui_op, lw_op, mfhi_op, mflo_op, mult_op, or_op, ori_op, sub_op, sw_op, syscall, xor_op, r_nop);
     type inst_state is (init,fetch,decode,execute,writeback);
     
     function getOp (op_code_tmp : std_logic_vector(5 downto 0); func_tmp : std_logic_vector(5 downto 0)) return op_type is
@@ -114,6 +115,7 @@ begin
             alu_l_sel_out    <= '-';
             alu_r_sel_out    <= '-';
             mdu_start_out    <= '0';
+            mdu_func_sel_out <= '0';
             cmp_r_sel_out    <= '-';
             ctrl_data_out    <= (others => '-');
             state            <= init;
@@ -169,6 +171,9 @@ begin
                                     dsrc          <= "00";
                                 -- mult, divu
                                 when "011000"|"011011"  =>
+                                    -- Set mdu func
+                                    mdu_func_sel_out  <= func(1); -- the 2nd LSB selects the mdu func
+                                    -- Start mdu
                                     mdu_start_out <= '1';
                                     -- Execute iterative algorithm;
                                     den           <= '0';
@@ -339,14 +344,16 @@ begin
                             -- mult or divu
                             elsif func = "011000" or func = "011011" then
                                --int0 <= '0';
+                               -- Wait for the mdu to finish its iterative task..
                                if mdu_rdy_inp = '0' then
+                                    -- not yet finished
                                     pgcen            <= '0';
                                     alu_func_sel_out <= (others => '-');
                                     alu_l_sel_out    <= '-';
                                     alu_r_sel_out    <= '-';
                                     ctrl_data_out    <= (others => '-');
                                     state_next       := execute;
-                               else
+                               else -- task finished
                                     pgcen            <= '1';
                                     alu_func_sel_out <= "000";
                                     alu_l_sel_out    <= '1';
@@ -392,7 +399,7 @@ begin
                             alu_l_sel_out    <= '1';
                             alu_r_sel_out    <= '1';
                             if(cmp_gt_inp = '1') then
-                              -- nPGC         := PGC + offset
+                                -- nPGC         := PGC + offset
                                 ctrl_data_out <= (31 downto 16 => imval(15)) & imval(15 downto 0);
                             else
                                 ctrl_data_out <= (others => '0');

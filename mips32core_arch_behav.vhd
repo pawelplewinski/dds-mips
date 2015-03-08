@@ -6,7 +6,8 @@ use IEEE.numeric_std.all;
 architecture behavior of mips32core is
 
     -- Type declarations
-    subtype u32_stype       is unsigned(31 downto 0);    
+    subtype u32_stype       is unsigned(31 downto 0);
+    subtype u64_stype       is unsigned(63 downto 0);   
     type reg_file_type      is array (natural range <>) of u32_stype;
     type op_type            is (no_op, add_op, addi_op, and_op, andi_op, beq_op, bgtz_op, divu_op, j_op, lui_op, lw_op, mfhi_op, mflo_op, mult_op, or_op, ori_op, sub_op, sw_op, syscall, xor_op, r_nop);
     type inst_state_type    is (init,fetch,decode,execute,writeback);
@@ -55,8 +56,9 @@ architecture behavior of mips32core is
     signal   reg    : reg_file_type(1 to 31);           -- Note: $0 gives always 0 (see also below)
     signal  sreg    : u32_stype;
     signal  treg    : u32_stype;
-    signal hireg    : u32_stype;
-    signal loreg    : u32_stype;
+    signal hireg    : std_logic_vector(31 downto 0);
+    signal loreg    : std_logic_vector(31 downto 0);
+    signal mdures   : std_logic_vector(63 downto 0);
     
     
     signal pgc      : unsigned(IA_LEN-1 downto 0);      -- program counter
@@ -69,7 +71,8 @@ architecture behavior of mips32core is
         alias daddr : std_logic_vector(4 downto 0) is inst(15 downto 11);
         alias func  : std_logic_vector(5 downto 0) is inst(5 downto 0);
     
-    signal eaddr    : u32_stype;
+    signal eaddr    : u32_stype;                  -- effective addr
+    -- (PC-relative instruction address is the offset parameter added to the address of the next instruction)
     signal d_sel    : integer range 0 to 31;      -- int reg file addr of the respective operand fields
     signal s_sel    : integer range 0 to 31;      -- int reg file addr of the respective operand fields
     signal t_sel    : integer range 0 to 31;      -- int reg file addr of the respective operand fields
@@ -82,20 +85,22 @@ architecture behavior of mips32core is
     signal state_nxt: inst_state_type := init;    
     signal op_state : op_type := no_op;
     signal intrp    : boolean := false;
-    
 
-    
 begin
 
     -- if operand field points to 0 (i.e. $0) then return always the value 0
     sreg <= (others => '0') when s_sel = 0      else reg(s_sel);
     treg <= (others => '0') when t_sel = 0      else reg(t_sel);
     
-    dbus_addr_out <= std_logic_vector(eaddr(DA_LEN-1 downto 0));
+    -- effective address
+    dbus_addr_out <= std_logic_vector(eaddr);
+    
+    -- DEBUG: concatenate the mdu sub results
+    mdures <= hireg & loreg;
 
     exec : process(clk, resetn)
-        variable addres     : unsigned(32 downto 0);    -- add result
-        variable mres       : unsigned(63 downto 0);    -- mult result
+        variable addres     : unsigned(32 downto 0);    -- add result (incl. carry bit)
+        variable mres       : signed(63 downto 0);      -- mult result
         variable state_var  : inst_state_type := init;  --
         variable state_next : inst_state_type := init;  -- 
     begin
@@ -106,7 +111,7 @@ begin
             imval           <= (others => '0');
             hireg           <= (others => '0');
             loreg           <= (others => '0');
-            eaddr           <= (others => '0'); -- dbus_addr_out   <= (others => '0');
+            eaddr           <= (others => '0');         -- which will do: dbus_addr_out   <= (others => '0');
             dbus_data_out   <= (others => '0');
             ibus_addr_out   <= (others => '0');
             dbus_wren_out   <= '0';
@@ -174,14 +179,23 @@ begin
                                 intrp <= false;
                             -- mult
                             elsif   func = "011000" then
-                                mres := sreg * treg;
-                                hireg <= mres(63 downto 32);
-                                loreg <= mres(31 downto 0);
+                                mres  := signed(sreg) * signed(treg);
+                                hireg <= std_logic_vector(mres(63 downto 32));
+                                loreg <= std_logic_vector(mres(31 downto  0));
+                                -- overwrite state_next to simulate multi-cycle R operation
+                                if mductr < 32 then
+                                    mductr <= mductr + 1;
+                                    state_next := execute;          -- still processing
+                                else
+                                    mductr <= 0;
+                                    state_next := writeback;        -- operation finished   
+                                end if;
+                                op_state    <= getOp(optc,func);    -- Update op state
                                 -- Execute iterative algorithm
                             -- divu
                             elsif   func = "011011" then
-                                hireg <= sreg mod treg;
-                                loreg <= sreg / treg;
+                                hireg <= std_logic_vector(sreg mod treg);
+                                loreg <= std_logic_vector(sreg / treg);
                                 -- overwrite state_next to simulate multi-cycle R operation
                                 if mductr < 32 then
                                     mductr <= mductr + 1;
@@ -215,10 +229,10 @@ begin
                                           reg(d_sel) <= sreg xor treg;
                                     -- mfhi
                                     when "010000" =>
-                                        reg(d_sel) <= hireg;
+                                        reg(d_sel) <= unsigned(hireg);
                                     -- mflo
                                     when "010010" =>
-                                        reg(d_sel) <= loreg;
+                                        reg(d_sel) <= unsigned(loreg);
                                     -- other r instructions are not implemented
                                     when others   => null;    
                                 end case;
@@ -310,7 +324,7 @@ begin
                         when others => null;
                     end case;
                     pgc <= pgc_next;                                -- Update program counter
-                    ibus_addr_out <= std_logic_vector(pgc_next);    -- Assign program counter to output
+                    ibus_addr_out <= std_logic_vector(to_unsigned(0,(32 - IA_LEN))) & std_logic_vector(pgc_next);    -- Assign program counter to output
                     state_nxt <= fetch;                             -- Update state (i.e. start all over again)
             end case;
         end if;

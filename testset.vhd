@@ -9,7 +9,6 @@ use IEEE.numeric_std.all;
 entity testset is
     generic(
         PGM_FILE : string    := "no.file";
-        SYS_32   : positive  := 32;
         IA_LEN   : natural   :=  9;
         DA_LEN   : natural   :=  6);
     port(

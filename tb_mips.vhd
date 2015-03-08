@@ -5,10 +5,10 @@ use IEEE.numeric_std.all;
 
 entity tb_mips is
     generic(
-        PGM_FILE : string   := "gcd.txt";   -- Assembly test code file (path)
+        PGM_FILE : string   := "gcd.txt";   -- Assembly test hex code file (path)
         IA_LEN   : natural  :=  4;
-        DA_LEN   : natural  := 16;
-        SYS_32   : positive := 32);
+        DA_LEN   : natural  := 16
+    );
 end entity tb_mips;
 
 architecture tb_arch of tb_mips is
@@ -19,7 +19,6 @@ architecture tb_arch of tb_mips is
     component testset is
     generic(
         PGM_FILE : string    := "no.file";
-        SYS_32   : positive  := 32;
         IA_LEN   : natural   :=  9;
         DA_LEN   : natural   :=  6);
     port(
@@ -34,7 +33,6 @@ architecture tb_arch of tb_mips is
     component mips32sys is 
 	generic (
         PGM_FILE    : string   := "no.file";
-        SYS_32      : positive := 32;
         IA_LEN      : natural  :=  9;
 		DA_LEN      : natural  :=  6;
 		GPIO_LEN    : natural  :=  8);
@@ -67,7 +65,6 @@ begin
     tst : testset
         generic map(
             PGM_FILE    => PGM_FILE,
-            SYS_32      => SYS_32,
             IA_LEN      => IA_LEN,
             DA_LEN      => DA_LEN)
         port map(
@@ -79,7 +76,6 @@ begin
     gut : entity work.mips32sys(gut_struct)
         generic map(
             PGM_FILE    => PGM_FILE,
-            SYS_32      => SYS_32,
             IA_LEN      => IA_LEN,
             DA_LEN      => DA_LEN,
             GPIO_LEN    => 8)
@@ -91,7 +87,6 @@ begin
     dut : entity work.mips32sys(dut_struct)
         generic map(
             PGM_FILE    => PGM_FILE,
-            SYS_32      => SYS_32,
             IA_LEN      => IA_LEN,
             DA_LEN      => DA_LEN,
             GPIO_LEN    => 8)

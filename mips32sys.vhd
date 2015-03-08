@@ -7,9 +7,8 @@ use IEEE.numeric_std.all;
 entity mips32sys is 
     generic (
         PGM_FILE 	: string   := "no.file";
-        SYS_32      : positive := 32;
         IA_LEN      : natural  :=  9;
-        DA_LEN      : natural  :=  5;
+		DA_LEN      : natural  :=  6;
         GPIO_LEN    : natural  :=  8
     );
     port(
@@ -25,17 +24,15 @@ architecture gut_struct of mips32sys is
     ---------------
     component mips32core is
     generic(
-        SYS_32    : positive := 32;
-        IA_LEN    : natural  :=  9;
-        DA_LEN    : natural  :=  6
+        IA_LEN    : natural  :=  9
     );
     port(
-        ibus_data_inp   : in  std_logic_vector(SYS_32-1 downto 0);
-        ibus_addr_out   : out std_logic_vector(IA_LEN-1 downto 0);
+        ibus_data_inp   : in  std_logic_vector(31 downto 0);
+        ibus_addr_out   : out std_logic_vector(31 downto 0);
         
-        dbus_addr_out   : out std_logic_vector(DA_LEN-1 downto 0);
-        dbus_data_inp   : in  std_logic_vector(SYS_32-1 downto 0);
-        dbus_data_out   : out std_logic_vector(SYS_32-1 downto 0);
+        dbus_addr_out   : out std_logic_vector(31 downto 0);
+        dbus_data_inp   : in  std_logic_vector(31 downto 0);
+        dbus_data_out   : out std_logic_vector(31 downto 0);
         dbus_wren_out   : out std_logic;
         
         clk             : in std_logic;
@@ -48,15 +45,14 @@ architecture gut_struct of mips32sys is
     ------------
     component mem32 is
     generic(
-        PGM_FILE 	: string := "no.file";
-        SYS_32      : positive := 32;
-        ADDR_LENGTH : natural  :=  9
+        PGM_FILE 	: string  := "no.file";
+        ADDR_LENGTH : natural :=  9
     );
     port(
         -- COM bus interface
-        bus_addr_inp    : in  std_logic_vector(ADDR_LENGTH-1 downto 0);
-        bus_data_inp    : in  std_logic_vector(SYS_32-1 downto 0);
-        bus_data_out    : out std_logic_vector(SYS_32-1 downto 0);
+        bus_addr_inp    : in  std_logic_vector(31 downto 0);
+        bus_data_inp    : in  std_logic_vector(31 downto 0);
+        bus_data_out    : out std_logic_vector(31 downto 0);
         bus_wren_inp    : in  std_logic;                                        -- '1' -> enable write ; '0' -> disable write
           
         clk             : in std_logic;
@@ -75,13 +71,13 @@ architecture gut_struct of mips32sys is
     -- bus signals for COM with RAM components from the master PoV (core -> I/O) 
     -- imem(iram):
     --signal iram_d_i   : std_logic_vector(SYS_32-1 downto 0);        -- [obsolete] holds new instr data for imem
-    signal iram_data_inp    : std_logic_vector(SYS_32-1 downto 0);        -- holds new instr from imem
-    signal iram_addr_out    : std_logic_vector(IA_LEN-1 downto 0);        -- holds new instr addr for imem
+    signal iram_data_inp    : std_logic_vector(31 downto 0);        -- holds new instr from imem
+    signal iram_addr_out    : std_logic_vector(31 downto 0);        -- holds new instr addr for imem
     --signal iram_we_o  : std_logic;                                  -- [obsolete] holds the write enable signal from core->imem
     -- dmem(dram):
-    signal dram_data_inp    : std_logic_vector(SYS_32-1 downto 0);
-    signal dram_addr_out    : std_logic_vector(DA_LEN-1 downto 0);
-    signal dram_data_out    : std_logic_vector(SYS_32-1 downto 0);
+    signal dram_data_inp    : std_logic_vector(31 downto 0);
+    signal dram_addr_out    : std_logic_vector(31 downto 0);
+    signal dram_data_out    : std_logic_vector(31 downto 0);
     signal dram_wren_out    : std_logic;
     
 begin
@@ -89,8 +85,7 @@ begin
     -- Connect MIPS core
     cpu : entity work.mips32core(behavior)
         generic map(
-            IA_LEN          => IA_LEN,
-            DA_LEN          => DA_LEN
+            IA_LEN          => IA_LEN
         )
         port map(
             ibus_data_inp   => iram_data_inp,
@@ -109,7 +104,6 @@ begin
     imem : mem32
         generic map(
             PGM_FILE 	    => PGM_FILE,
-            SYS_32          => SYS_32,
             ADDR_LENGTH     => IA_LEN
         )
         port map(
@@ -125,7 +119,6 @@ begin
     -- Connect data memory            
     dmem : mem32
         generic map(
-            SYS_32          => SYS_32,
             ADDR_LENGTH     => DA_LEN
         )
         port map(
@@ -148,17 +141,15 @@ architecture dut_struct of mips32sys is
     ---------------
     component mips32core is
     generic(
-        SYS_32    : positive := 32;
-        IA_LEN    : natural  :=  9;
-        DA_LEN    : natural  :=  6
+        IA_LEN    : natural  :=  9
     );
     port(
-        ibus_data_inp   : in  std_logic_vector(SYS_32-1 downto 0);
-        ibus_addr_out   : out std_logic_vector(IA_LEN-1 downto 0);
+        ibus_data_inp   : in  std_logic_vector(31 downto 0);
+        ibus_addr_out   : out std_logic_vector(31 downto 0);
         
-        dbus_addr_out   : out std_logic_vector(DA_LEN-1 downto 0);
-        dbus_data_inp   : in  std_logic_vector(SYS_32-1 downto 0);
-        dbus_data_out   : out std_logic_vector(SYS_32-1 downto 0);
+        dbus_addr_out   : out std_logic_vector(31 downto 0);
+        dbus_data_inp   : in  std_logic_vector(31 downto 0);
+        dbus_data_out   : out std_logic_vector(31 downto 0);
         dbus_wren_out   : out std_logic;
         
         clk             : in std_logic;
@@ -172,14 +163,13 @@ architecture dut_struct of mips32sys is
     component mem32 is
     generic(
         PGM_FILE 	: string := "no.file";
-        SYS_32      : positive := 32;
         ADDR_LENGTH : natural  :=  9
     );
     port(
         -- COM bus interface
-        bus_addr_inp    : in  std_logic_vector(ADDR_LENGTH-1 downto 0);
-        bus_data_inp    : in  std_logic_vector(SYS_32-1 downto 0);
-        bus_data_out    : out std_logic_vector(SYS_32-1 downto 0);
+        bus_addr_inp    : in  std_logic_vector(31 downto 0);
+        bus_data_inp    : in  std_logic_vector(31 downto 0);
+        bus_data_out    : out std_logic_vector(31 downto 0);
         bus_wren_inp    : in  std_logic;                                        -- '1' -> enable write ; '0' -> disable write
           
         clk             : in std_logic;
@@ -198,13 +188,13 @@ architecture dut_struct of mips32sys is
     -- bus signals for COM with RAM components from the master PoV (core -> I/O) 
     -- imem(iram):
     --signal iram_d_i   : std_logic_vector(SYS_32-1 downto 0);        -- [obsolete] holds new instr data for imem
-    signal iram_data_inp    : std_logic_vector(SYS_32-1 downto 0);        -- holds new instr from imem
-    signal iram_addr_out    : std_logic_vector(IA_LEN-1 downto 0);        -- holds new instr addr for imem
+    signal iram_data_inp    : std_logic_vector(31 downto 0);        -- holds new instr from imem
+    signal iram_addr_out    : std_logic_vector(31 downto 0);        -- holds new instr addr for imem
     --signal iram_we_o  : std_logic;                                  -- [obsolete] holds the write enable signal from core->imem
     -- dmem(dram):
-    signal dram_data_inp    : std_logic_vector(SYS_32-1 downto 0);
-    signal dram_addr_out    : std_logic_vector(DA_LEN-1 downto 0);
-    signal dram_data_out    : std_logic_vector(SYS_32-1 downto 0);
+    signal dram_data_inp    : std_logic_vector(31 downto 0);
+    signal dram_addr_out    : std_logic_vector(31 downto 0);
+    signal dram_data_out    : std_logic_vector(31 downto 0);
     signal dram_wren_out    : std_logic;
     
 begin
@@ -212,8 +202,7 @@ begin
     -- Connect MIPS core
     cpu : entity work.mips32core(structural)
         generic map(
-            IA_LEN          => IA_LEN,
-            DA_LEN          => DA_LEN
+            IA_LEN          => IA_LEN
         )
         port map(
             ibus_data_inp   => iram_data_inp,
@@ -232,7 +221,6 @@ begin
     imem : mem32
         generic map(
             PGM_FILE 	    => PGM_FILE,
-            SYS_32          => SYS_32,
             ADDR_LENGTH     => IA_LEN
         )
         port map(
@@ -248,7 +236,6 @@ begin
     -- Connect data memory            
     dmem : mem32
         generic map(
-            SYS_32          => SYS_32,
             ADDR_LENGTH     => DA_LEN
         )
         port map(

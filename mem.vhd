@@ -10,9 +10,8 @@ use std.textio.all;
 
 entity mem32 is
     generic(
-        PGM_FILE 	: string := "no.file";
-        SYS_32      : positive := 32;
-        ADDR_LENGTH : natural  :=  9
+        PGM_FILE 	: string  := "no.file";
+        ADDR_LENGTH : natural :=  9
     );
     port(
         clk             : in  std_logic;
@@ -20,9 +19,9 @@ entity mem32 is
         
         -- COM bus interface
         bus_wren_inp    : in  std_logic;	                                   -- '1' -> enable write ; '0' -> disable write
-        bus_addr_inp    : in  std_logic_vector(ADDR_LENGTH-1 downto 0);
-        bus_data_inp    : in  std_logic_vector(SYS_32-1      downto 0);
-        bus_data_out    : out std_logic_vector(SYS_32-1      downto 0)
+        bus_addr_inp    : in  std_logic_vector(31 downto 0);
+        bus_data_inp    : in  std_logic_vector(31 downto 0);
+        bus_data_out    : out std_logic_vector(31 downto 0)
     );
 end entity mem32;
 
@@ -32,14 +31,15 @@ end entity mem32;
 -- models the data mem of the MIPS system
 
 architecture ibehav of mem32 is
-    type mem_type is array (natural range <>) of std_logic_vector(SYS_32-1 downto 0);
+    type mem_type is array (natural range <>) of std_logic_vector(31 downto 0);
     signal memory : mem_type(0 to ((2**ADDR_LENGTH)-1));
+    signal daddr  : natural range 0 to ((2**ADDR_LENGTH)-1);
 begin
 
     mem_access : process(clk, resetn)
         --variable addr_ctr : unsigned(ADDR_LENGTH-1 downto 0) := (others => '0');
         variable rdline   : line;
-        variable hexdata  : std_logic_vector(SYS_32-1 downto 0);
+        variable hexdata  : std_logic_vector(31 downto 0);
         file mips_pgm     : text open read_mode is PGM_FILE;
     begin
         if(resetn = '0') then
@@ -60,9 +60,14 @@ begin
         end if;
     end process mem_access;
     
+    -- addr chk : checks if the requested addr is within the limited range
+    -- (since the mem is artificially kept small while the addr space allows to point to not allocated mem)
+    daddr <= to_integer(unsigned(bus_addr_inp(ADDR_LENGTH-1 downto 0)));    -- DEBUG: just cut
+    assert unsigned(bus_addr_inp(31 downto ADDR_LENGTH)) = 0 report "dmem: addr request out of range" severity ERROR;
+    
     -- always keep the output updated
     -- [causes WARNING in sim due to illegal unsigned(U) conversion]
-    bus_data_out <= memory(to_integer(unsigned(bus_addr_inp)));
+    bus_data_out <= memory(daddr);
     
 end architecture ibehav;
 
@@ -72,8 +77,9 @@ end architecture ibehav;
 -- models the instruction mem of the MIPS system
 
 architecture dbehav of mem32 is
-    type mem_type is array (natural range <>) of std_logic_vector(SYS_32-1 downto 0);
+    type mem_type is array (natural range <>) of std_logic_vector(31 downto 0);
     signal memory : mem_type(0 to ((2**ADDR_LENGTH)-1));
+    signal daddr  : natural range 0 to ((2**ADDR_LENGTH)-1);
 begin
     mem_access : process(clk, resetn)
     begin
@@ -85,13 +91,18 @@ begin
         elsif(rising_edge(clk)) then
             -- check write enabled
             if(bus_wren_inp = '1') then
-                memory(to_integer(unsigned(bus_addr_inp))) <= bus_data_inp;
+                memory(daddr) <= bus_data_inp;
             end if;
         end if;
     end process mem_access;
     
+    -- addr chk : checks if the requested addr is within the limited range
+    -- (since the mem is artificially kept small while the addr space allows to point to not allocated mem)
+    daddr <= to_integer(unsigned(bus_addr_inp(ADDR_LENGTH-1 downto 0)));    -- DEBUG: just cut
+    assert unsigned(bus_addr_inp(31 downto ADDR_LENGTH)) = 0 report "dmem: addr request out of range" severity ERROR;
+    
     -- always keep the output updated
     -- [causes WARNING in sim due to illegal unsigned(U) conversion]
-    bus_data_out <= memory(to_integer(unsigned(bus_addr_inp)));
+    bus_data_out <= memory(daddr);
     
 end architecture dbehav;
