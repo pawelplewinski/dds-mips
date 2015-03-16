@@ -1,6 +1,7 @@
 library IEEE;
 
-use IEEE.std_logic_1164.all;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
 use IEEE.numeric_std.all;
 
 -- Multiplication and Division Unit
@@ -33,6 +34,9 @@ begin
     calc : process(clk, resetn)
         variable mres : signed(63 downto 0);
         variable strt : std_logic;
+		variable br,nbr : std_logic_vector(31 downto 0);
+		variable qn1 : std_logic ;	
+		variable acqr : std_logic_vector(63 downto 0);		
     begin
         if resetn = '0' then
             hireg         <= (others => '0');
@@ -91,6 +95,40 @@ begin
                     end if;
                 end if;
             elsif strt = '1' then -- mult
+				if (ctr = 0) then
+					acqr(63 downto 32) := (others=>'0');
+					acqr(31 downto  0) := mdu_l_inp;
+					br  := (mdu_r_inp);
+					nbr := (not mdu_r_inp) + '1';
+					qn1 := '0';
+					rdy <= '1';
+				end if;
+				if (ctr < 31) then
+					if( acqr(0) = '0' and qn1 = '0') then
+						qn1 := acqr(0);
+						acqr(62 downto 0) := acqr(63 downto 1);
+					elsif ( acqr(0) = '0' and qn1 = '1') then
+						acqr(63 downto 32) := acqr(63 downto 32) + br;
+						qn1 := acqr(0);
+						acqr(62 downto 0) := acqr(63 downto 1);
+					elsif ( acqr(0) = '1' and qn1 = '0') then
+						acqr(63 downto 32) := acqr(63 downto 32) + nbr;
+						qn1 := acqr(0);
+						acqr(62 downto 0) := acqr(63 downto 1);
+					elsif ( acqr(0) = '1' and qn1 = '1') then
+							qn1 := acqr(0);
+							acqr(62 downto 0) := acqr(63 downto 1);
+					end if ;
+					ctr <= ctr + 1;
+					rdy <= '1';
+				end if; 
+				if (ctr = 31) then
+					rdy <= '0';
+					ctr <= 0;
+				end if;
+					hireg <= acqr(63 downto 32);
+					loreg <= acqr(31 downto 0);
+
                 -- ctr <= ctr + 1;
                 -- if ctr = 31 then 
                     -- ctr <= 0;
