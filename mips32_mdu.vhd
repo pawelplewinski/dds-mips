@@ -103,7 +103,7 @@ begin
 					qn1 := '0';
 					rdy <= '1';
 				end if;
-				if (ctr < 31) then
+				if (ctr < 32) then
 					if( acqr(0) = '0' and qn1 = '0') then
 						qn1 := acqr(0);
 						acqr(62 downto 0) := acqr(63 downto 1);
@@ -119,13 +119,15 @@ begin
 							qn1 := acqr(0);
 							acqr(62 downto 0) := acqr(63 downto 1);
 					end if ;
+				  if (ctr = 31) then
+					 rdy <= '0';
+					 ctr <= 0;
+				  else
 					ctr <= ctr + 1;
 					rdy <= '1';
+					end if;
 				end if; 
-				if (ctr = 31) then
-					rdy <= '0';
-					ctr <= 0;
-				end if;
+
 					hireg <= acqr(63 downto 32);
 					loreg <= acqr(31 downto 0);
 
