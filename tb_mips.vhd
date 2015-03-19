@@ -6,8 +6,8 @@ use IEEE.numeric_std.all;
 entity tb_mips is
     generic(
         PGM_FILE : string   := "gcd.txt";   -- Assembly test hex code file (path)
-        IA_LEN   : natural  :=  4;
-        DA_LEN   : natural  := 16
+        IA_LEN   : natural  :=  6;
+        DA_LEN   : natural  :=  6
     );
 end entity tb_mips;
 
@@ -41,9 +41,19 @@ architecture tb_arch of tb_mips is
         resetn      : in  std_logic);
     end component mips32sys;
     
-    ----------------
-    -- Comparator --
-    ----------------
+    -------------------------
+    -- comparator/verifier --
+    -------------------------
+    component verifier is
+    generic(
+        PGM_FILE : string    := "no.file";
+        IA_LEN   : natural   :=  9;
+        DA_LEN   : natural   :=  6);
+    port(
+        clk      : in std_logic;
+        rst      : in std_logic;
+        rstn     : in std_logic);
+    end component verifier;
     
     --for dut : mips32core use entity work.mips32core(structural);
     
@@ -71,7 +81,7 @@ begin
             clk         => tb_clk,
             rst         => tb_reset,
             rstn        => tb_resetn); 
-     
+
     -- Connect MIPS system (gut)
     gut : entity work.mips32sys(gut_struct)
         generic map(
@@ -94,6 +104,16 @@ begin
             clk         => tb_clk,
             resetn      => tb_resetn);
     
-    -- Connect Comparator
+    -- Connect comparator/verifier
+     
+    vfy : verifier
+        generic map(
+            PGM_FILE    => PGM_FILE,
+            IA_LEN      => IA_LEN,
+            DA_LEN      => DA_LEN)
+        port map(
+            clk         => tb_clk,
+            rst         => tb_reset,
+            rstn        => tb_resetn); 
 
 end architecture tb_arch;

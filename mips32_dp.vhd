@@ -120,13 +120,14 @@ architecture behav of mips32_dp is
     signal ssel     : integer range 0 to 31;
     signal tsel     : integer range 0 to 31;
     signal dsel     : integer range 0 to 31;
+    
 begin
 
     -- The address of the ibus is always connected to program counter
     ibus_addr_out <= std_logic_vector(pgc);
     inst_out      <= std_logic_vector(inst);
     
-    dbus_addr_out <= alu_res(31 downto 0);
+    dbus_addr_out <= "00" & alu_res(31 downto 2); -- right shift 2 to compensate +4 dmem addressing issue
     dbus_data_out <= std_logic_vector(treg);
     
     ssel <= to_integer(unsigned(inst(25 downto 21)));
@@ -145,7 +146,7 @@ begin
         alu_cout    => alu_cout,
         func_sel    => alu_func_sel_inp);
      
-    -- Connect ALU
+    -- Connect ALU (select between reg file or pgc as input for ALU)
     with alu_l_sel_inp select alu_l <=
         std_logic_vector(sreg) when '0',
         std_logic_vector(pgc)  when '1',
@@ -207,9 +208,9 @@ begin
     sync_proc : process(clk,resetn)
     begin
         if resetn = '0' then
-            reg  <= (others => (others => '0'));
-            pgc  <= (others => '0');
-            inst <= (others => '0');
+            reg             <= (others => (others => '0'));     -- reset register file
+            pgc             <= (others => '0');                 -- reset program counter
+            inst            <= (others => '0');                 -- reset instr reg
         elsif rising_edge(clk) then
             -- Update reg file output (dependent on the requested addr)
             if ten = '1' and tsel /= 0 then

@@ -2,6 +2,7 @@ library IEEE;
 
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
+use ieee.std_logic_unsigned.all;
 
 entity mips32_ctrl is
     port(
@@ -66,7 +67,7 @@ architecture behavior of mips32_ctrl is
                     when "010000" =>    return_val := mfhi_op;   -- mfhi
                     when "010010" =>    return_val := mflo_op;   -- mflo
                     -- other r instructions are not implemented
-                    when others   =>    return_val :=    no_op;   --
+                    when others   =>    return_val :=    no_op;   -- "001100"
                 end case;
             -- J instruction
             when "000010" =>            return_val :=    j_op;   -- j
@@ -83,19 +84,21 @@ architecture behavior of mips32_ctrl is
             when "100011" =>            return_val :=   lw_op;   -- lw
             when "101011" =>            return_val :=   sw_op;   -- sw
             -- Other instructions not implemented, count as NOP
-            when others =>              return_val := no_op;     --
+            when others =>              return_val :=   no_op;   --
         end case;
         return return_val;
     end getOp;
 
     signal state     : inst_state := init;
-    signal state_nxt : inst_state := init;    
-    signal op_state  : op_type := no_op;
+    signal state_nxt : inst_state := init;
     
     -- field alias for instruction word
     alias optc  : std_logic_vector( 5 downto 0) is inst_inp(31 downto 26);
     alias func  : std_logic_vector( 5 downto 0) is inst_inp( 5 downto  0);    
     alias imval : std_logic_vector(25 downto 0) is inst_inp(25 downto  0);
+
+    -- DEBUG
+    signal op_state  : op_type := no_op;    -- store the current op in a readable format
     
 begin
     ctrl : process(clk, resetn)
@@ -104,19 +107,19 @@ begin
     begin
         if resetn = '0' then
             --int0             <= '0';
+            insten           <= '0';
             dbus_wren_out    <= '0';
             den              <= '0';
             ten              <= '0';
             dsrc             <= (others => '-');
             tsrc             <= (others => '-');
             pgcen            <= '0';
-            insten           <= '0';
             alu_func_sel_out <= (others => '-');
             alu_l_sel_out    <= '-';
             alu_r_sel_out    <= '-';
             mdu_start_out    <= '0';
             mdu_func_sel_out <= '0';
-            cmp_r_sel_out    <= '-';
+            cmp_r_sel_out    <= '0';
             ctrl_data_out    <= (others => '-');
             state            <= init;
             state_next       := init;
@@ -126,7 +129,7 @@ begin
             case state_var is
                 when init =>
                     --int0             <= '0';
-                    insten           <= '0';
+                    insten           <= '1';                -- enable storing the next instr to the internal instr reg (i.e. 'start fetch!')
                     dbus_wren_out    <= '0';
                     den              <= '0';
                     ten              <= '0';
@@ -137,12 +140,12 @@ begin
                     alu_l_sel_out    <= '-';
                     alu_r_sel_out    <= '-';
                     mdu_start_out    <= '0';
-                    cmp_r_sel_out    <= '-';
+                    cmp_r_sel_out    <= '0';
                     ctrl_data_out    <= (others => '-');
                     state_next       := fetch;
                 when fetch =>
                     --int0             <= '0';
-                    insten           <= '0';
+                    insten           <= '0';                -- disable instr stroring again; during this step instr is stored to the internal instr_reg
                     dbus_wren_out    <= '0';
                     den              <= '0';
                     ten              <= '0';
@@ -158,8 +161,8 @@ begin
                     state_next       := decode;
                 when decode =>
                     --int0             <= '0';
-                    insten           <= '0';
                     op_state         <= getOp(optc,func);    -- Update op state
+                    insten           <= '0';
                     case optc is
                         -- special instructions
                         when "000000" =>
@@ -189,7 +192,7 @@ begin
                                     den           <= '1';
                                     dsrc          <= "10";
                                 -- other special instructions are not implemented
-                                when others => null;  
+                                when others => --null;  
                                     mdu_start_out <= '0';
                                     den           <= '0';
                                     dsrc          <= (others => '-');
@@ -215,13 +218,14 @@ begin
                             ten              <= '0';
                             tsrc             <= (others => '-');
                             dsrc             <= (others => '-');
-                            pgcen            <= '1';
                             mdu_start_out    <= '0';
                             cmp_r_sel_out    <= '-';
                             -- nPGC := PGC & 0xFC000000
-                            alu_func_sel_out <= "100";
-                            alu_l_sel_out    <= '1';
-                            alu_r_sel_out    <= '1';
+                            -- Update the pgc <- set pgc to zero
+                            pgcen            <= '1';
+                            alu_func_sel_out <= "100";          -- select ALU fcn: and
+                            alu_l_sel_out    <= '1';            -- select pgc as ALU input
+                            alu_r_sel_out    <= '1';            -- select control data as ALU input
                             ctrl_data_out    <= (31 downto 26 => '1') & (25 downto 0 => '0');
                         -- BEQ
                         when "000100" =>
@@ -229,38 +233,42 @@ begin
                             ten              <= '0';
                             tsrc             <= (others => '-');
                             dsrc             <= (others => '-');
-                            pgcen            <= '1';
                             mdu_start_out    <= '0';
                             -- t reg
                             cmp_r_sel_out    <= '1';
-                            -- nPGC := PGC + 1
-                            alu_func_sel_out <= "000";
-                            alu_l_sel_out    <= '1';
-                            alu_r_sel_out    <= '1';
-                            ctrl_data_out    <= std_logic_vector(to_unsigned(1,32));
+                            -- DEBUG: NO Update the pgc (shifted to execute)
+                            -- nPGC := PGC + 0
+                            pgcen            <= '1';
+                            alu_func_sel_out <= "000";          -- select ALU fcn: add
+                            alu_l_sel_out    <= '1';            -- select pcg as ALU input
+                            alu_r_sel_out    <= '1';            -- select control data (offset) as ALU input
+                            ctrl_data_out    <= (others => '0');-- Update pgc with 0
+                            --ctrl_data_out    <= std_logic_vector(to_unsigned(1,32));
                         -- BGTZ
                         when "000111" =>
                             den              <= '0';
                             ten              <= '0';
                             tsrc             <= (others => '-');
                             dsrc             <= (others => '-');
-                            pgcen            <= '1';
                             mdu_start_out    <= '0';
                             -- zero
                             cmp_r_sel_out    <= '0';
-                            -- nPGC := PGC + 1
-                            alu_func_sel_out <= "000";
-                            alu_l_sel_out    <= '1';
-                            alu_r_sel_out    <= '1';
-                            ctrl_data_out    <= std_logic_vector(to_unsigned(1,32));
-                        -- I instructions
+                            -- DEBUG NO Update pgc (shifted to execute)
+                            -- nPGC := PGC + 0
+                            pgcen            <= '1';
+                            alu_func_sel_out <= "000";          -- select ALU fcn: add
+                            alu_l_sel_out    <= '1';            -- select pcg as ALU input
+                            alu_r_sel_out    <= '1';            -- select control data (offset) as ALU input
+                            ctrl_data_out <= (others => '0');   -- Update pgc with 0
+                            --ctrl_data_out    <= std_logic_vector(to_unsigned(1,32));
+                        -- I instructions ( addi | andi | ori | lui )
                         when "001000" | "001100" | "001101" | "001111" =>
                             den              <= '0';
                             dsrc             <= (others => '-');
                             ten              <= '1';
-                            if optc(2 downto 0) = "111" then
+                            if optc(2 downto 0) = "111" then -- lui
                                 tsrc <= "01";
-                            else
+                            else -- others
                                 tsrc <= "00";
                             end if;
                             pgcen            <= '0';
@@ -296,13 +304,16 @@ begin
                             dsrc             <= (others => '-');
                             ten              <= '0';
                             tsrc             <= (others => '-');
-                            pgcen            <= '0';
                             mdu_start_out    <= '0';
                             cmp_r_sel_out    <= '-';
-                            alu_func_sel_out <= "000";
                             -- eaddr := $s + offset
-                            alu_l_sel_out    <= '0';
-                            alu_r_sel_out    <= '1';
+                            -- dmem settings
+                            --dbus_wren_out    <= '0';    -- disable writing to dmem 
+                            dbus_wren_out    <= '1';    -- disable writing to dmem 
+                            pgcen            <= '0';
+                            alu_func_sel_out <= "000";  -- select ALU fcn: add
+                            alu_l_sel_out    <= '0';    -- select sreg as ALU input
+                            alu_r_sel_out    <= '1';    -- select control data (offset) as ALU input
                             ctrl_data_out    <= (31 downto 16 => imval(15)) & imval(15 downto 0);
                         -- Other stuff not implemented
                         when others =>
@@ -364,58 +375,71 @@ begin
                                 --int0             <= '0';
                                 --nPGC             := PGC + 1
                                 pgcen              <= '1';
-                                alu_func_sel_out   <= "000";
-                                alu_l_sel_out      <= '1';
-                                alu_r_sel_out      <= '1';
+                                alu_func_sel_out   <= "000";-- select ALU fcn: add
+                                alu_l_sel_out      <= '1';  -- select pcg as ALU input
+                                alu_r_sel_out      <= '1';  -- select control data (offset) as ALU input
                                 ctrl_data_out      <= std_logic_vector(to_unsigned(1,32));
                             end if;
                         -- J instruction
                         when "000010" =>
                             --int0             <= '0';
                             --nPGC             := PGC | imval
-                            pgcen <= '1';
-                            alu_func_sel_out <= "101";
-                            alu_l_sel_out    <= '1';
-                            alu_r_sel_out    <= '1';
+                            -- Update pgc <- set new pcg value
+                            pgcen            <= '1';
+                            alu_func_sel_out <= "101";  -- select ALU fcn: or
+                            alu_l_sel_out    <= '1';    -- select pcg as ALU input
+                            alu_r_sel_out    <= '1';    -- select control data (offset) as ALU input
                             ctrl_data_out    <= (31 downto 26 => '0') & imval;
                         -- BEQ instruction
                         when "000100" =>
                             --int0             <= '0';
-                            pgcen            <= '1';
-                            alu_func_sel_out <= "000";
-                            alu_l_sel_out    <= '1';
-                            alu_r_sel_out    <= '1';
-                            if(cmp_eq_inp = '1') then
-                                -- nPGC       := PGC + offset
-                                ctrl_data_out <= (31 downto 16 => imval(15)) & imval(15 downto 0);
+                            -- Update pgc
+                            pgcen            <= '1';        -- enable pgc
+                            alu_func_sel_out <= "000";      -- select ALU fcn: ADD
+                            alu_l_sel_out    <= '1';        -- select pcg as ALU input
+                            alu_r_sel_out    <= '1';        -- select control data (offset) as ALU input
+                            if(cmp_eq_inp = '1') then -- if $s and $t are equal
+                                -- nPGC       := PGC + offset + 1
+                                ctrl_data_out <= ((31 downto 16 => imval(15)) & imval(15 downto 0)) + 1;
                             else
-                                ctrl_data_out <= (others => '0');
+                                --ctrl_data_out <= (others => '0');
+                                ctrl_data_out    <= std_logic_vector(to_unsigned(1,32));
                             end if;
                         -- BGTZ instruction
                         when "000111" =>
                             --int0             <= '0';
-                            pgcen            <= '1';
-                            alu_func_sel_out <= "000";
-                            alu_l_sel_out    <= '1';
-                            alu_r_sel_out    <= '1';
+                            -- Update pgc
+                            pgcen            <= '1';        -- enable pgc
+                            alu_func_sel_out <= "000";      -- select ALU fcn: ADD
+                            alu_l_sel_out    <= '1';        -- select pcg as ALU input
+                            alu_r_sel_out    <= '1';        -- select control data (offset) as ALU input
                             if(cmp_gt_inp = '1') then
-                                -- nPGC         := PGC + offset
-                                ctrl_data_out <= (31 downto 16 => imval(15)) & imval(15 downto 0);
+                                -- nPGC         := PGC + offset + 1
+                                ctrl_data_out <= (31 downto 16 => imval(15)) & imval(15 downto 0) + 1;
                             else
-                                ctrl_data_out <= (others => '0');
+                                --ctrl_data_out <= (others => '0');
+                                ctrl_data_out    <= std_logic_vector(to_unsigned(1,32));
                             end if;
                         -- SW
                         when "101011" =>
-                            dbus_wren_out    <= '1';
+                            --dbus_wren_out    <= '1';        -- enable writing to dmem
+                            dbus_wren_out    <= '0';        -- enable writing to dmem
+                            -- Update program counter
+                            pgcen            <= '1';
+                            alu_func_sel_out <= "000";      -- select ALU fcn: ADD
+                            alu_l_sel_out    <= '1';        -- select pcg as ALU input
+                            alu_r_sel_out    <= '1';        -- select control data (offset) as ALU input
+                            ctrl_data_out    <= std_logic_vector(to_unsigned(1,32));
                         when others => 
                             --int0             <= '0';
                             --nPGC             := PGC + 1
+                            -- Update program counter
                             pgcen            <= '1';
-                            alu_func_sel_out <= "000";
-                            alu_l_sel_out    <= '1';
-                            alu_r_sel_out    <= '1';
+                            alu_func_sel_out <= "000";      -- select ALU fcn: ADD
+                            alu_l_sel_out    <= '1';        -- select pcg as ALU input
+                            alu_r_sel_out    <= '1';        -- select control data (offset) as ALU input
                             ctrl_data_out    <= std_logic_vector(to_unsigned(1,32));
-                    end case;
+                    end case; -- end DECODE
                 when writeback =>
                     --int0             <= '0';
                     dbus_wren_out    <= '0';

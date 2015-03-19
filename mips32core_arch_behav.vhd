@@ -53,7 +53,7 @@ architecture behavior of mips32core is
     end getOp;
     
     -- GPREG bank
-    signal   reg    : reg_file_type(1 to 31);           -- Note: $0 gives always 0 (see also below)
+    signal   reg    : reg_file_type(0 to 31);           -- Note: $0 gives always 0 (see also below)
     signal  sreg    : u32_stype;
     signal  treg    : u32_stype;
     signal hireg    : std_logic_vector(31 downto 0);
@@ -101,6 +101,7 @@ begin
     exec : process(clk, resetn)
         variable addres     : unsigned(32 downto 0);    -- add result (incl. carry bit)
         variable mres       : signed(63 downto 0);      -- mult result
+        variable mdu_rdy    : std_logic;
         variable state_var  : inst_state_type := init;  --
         variable state_next : inst_state_type := init;  -- 
     begin
@@ -116,10 +117,11 @@ begin
             ibus_addr_out   <= (others => '0');
             dbus_wren_out   <= '0';
             mductr <= 0;
-        elsif(rising_edge(clk)) then
+        elsif (rising_edge(clk)) then
             -- Instruction state machine
             state       <= state_nxt;
             state_var   := state_nxt;
+            mdu_rdy     := '0';
             case state_var is
                 when init =>
                     state_nxt       <= fetch;           -- Update state
@@ -148,20 +150,30 @@ begin
                         when "000111" =>
                             imval(15 downto 0) <= unsigned(inst(15 downto 0));
                             s_sel <= to_integer(unsigned(saddr));
-                        -- I instructions (addi, andi, ori, lui)
+                        -- I instructions ( addi | andi | ori | lui )
                         when "001000" | "001100" | "001101" | "001111" =>
                             imval(15 downto 0) <= unsigned(inst(15 downto 0));
                             t_sel <= to_integer(unsigned(taddr));
                             s_sel <= to_integer(unsigned(saddr));
-                        -- load instructions (lw)
-                        when "100011" | "101011" =>
+                        -- -- load instructions ( lw | sw )
+                        -- when "100011" | "101011" =>
+                        -- load instructions ( lw )
+                        when "100011" =>
                             imval(15 downto 0) <= unsigned(inst(15 downto 0));
                             t_sel <= to_integer(unsigned(taddr));
                             s_sel <= to_integer(unsigned(saddr));
+                        -- store instructions ( sw )    
+                        when "101011" =>
+                            --imval(15 downto 0) <= unsigned(inst(15 downto 0));
+                            --t_sel <= to_integer(unsigned(taddr));
+                            --s_sel <= to_integer(unsigned(saddr));
+                            dbus_wren_out <= '1';
+                            eaddr <= (reg(to_integer(unsigned(saddr))) + ((31 downto 15 => inst(15)) & unsigned(inst(15 downto 1)))) srl 2;
+                            dbus_data_out <= std_logic_vector(reg(to_integer(unsigned(taddr))));
                         -- Other instructions not implemented, count as NOP
                         when others => 
-                            optc <= "000000";
-                            func <= "000000";
+                            optc  <= "000000";
+                            func  <= "000000";
                             d_sel <= 0;
                             t_sel <= 0;
                             s_sel <= 0;
@@ -182,12 +194,14 @@ begin
                                 mres  := signed(sreg) * signed(treg);
                                 hireg <= std_logic_vector(mres(63 downto 32));
                                 loreg <= std_logic_vector(mres(31 downto  0));
+                                -- Set mdu rdy flag according to the finished status
+                                if mductr = 31 then mdu_rdy := '1'; else mdu_rdy := '0'; end if;
                                 -- overwrite state_next to simulate multi-cycle R operation
                                 if mductr < 32 then
-                                    mductr <= mductr + 1;
+                                    mductr     <= mductr + 1;
                                     state_next := execute;          -- still processing
                                 else
-                                    mductr <= 0;
+                                    mductr     <= 0;
                                     state_next := writeback;        -- operation finished   
                                 end if;
                                 op_state    <= getOp(optc,func);    -- Update op state
@@ -196,12 +210,15 @@ begin
                             elsif   func = "011011" then
                                 hireg <= std_logic_vector(sreg mod treg);
                                 loreg <= std_logic_vector(sreg / treg);
+                                --mres  := signed(hireg & loreg); -- DEBUG
+                                -- Set mdu rdy flag according to the finished status
+                                if mductr = 31 then mdu_rdy := '1'; else mdu_rdy := '0'; end if;
                                 -- overwrite state_next to simulate multi-cycle R operation
                                 if mductr < 32 then
-                                    mductr <= mductr + 1;
+                                    mductr     <= mductr + 1;
                                     state_next := execute;          -- still processing
                                 else
-                                    mductr <= 0;
+                                    mductr     <= 0;
                                     state_next := writeback;        -- operation finished   
                                 end if;
                                 op_state    <= getOp(optc,func);    -- Update op state
@@ -249,6 +266,7 @@ begin
                         when "000100" =>
                             -- sign extended add
                             addres := ((32 downto IA_LEN => '0') & pgc) + ((32 downto 16 => imval(15)) & imval(15 downto 0)) + 1;
+                            -- branch if..
                             if(sreg = treg) then
                                 pgc_next <= addres(IA_LEN-1 downto 0);
                             else
@@ -258,7 +276,7 @@ begin
                         when "000111" =>
                             -- sign extended add
                             addres := ((32 downto IA_LEN => '0') & pgc) + ((32 downto 16 => imval(15)) & imval(15 downto 0)) + 1;
-                            -- signed 
+                            -- branch if..
                             if(sreg(31) = '0' and (sreg(30 downto 0) > 0)) then
                                 pgc_next <= addres(IA_LEN-1 downto 0);
                             else
@@ -294,12 +312,14 @@ begin
                             pgc_next <= pgc + 1;
                         -- SW
                         when "101011" =>
-                            dbus_wren_out <= '1';
-                            eaddr <= sreg + ((31 downto 16 => imval(15)) & imval(15 downto 0));
-                            dbus_data_out <= std_logic_vector(treg);
+                            dbus_wren_out <= '0';
+                            --dbus_wren_out <= '1';
+                            --eaddr <= sreg + ((31 downto 16 => imval(15)) & imval(15 downto 0));
+                            --dbus_data_out <= std_logic_vector(treg);
                             pgc_next <= pgc + 1;
                         -- Other instructions not implemented, count as NOP
-                        when others => null;
+                        when others => 
+                            null;
                     end case;
                     state_nxt <= state_next;    -- Update next state
                 when writeback =>

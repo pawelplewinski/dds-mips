@@ -1,30 +1,34 @@
 echo "DO: Quitting simulation if runnning."
 # -- value [@time:{100ns} or percentaged: 50]
 quit -sim
-
+vdel -all
+vlib work
 echo "DO: Starting compilation."
 # -- Compile memory [entity::mem32] [architecture::behav]
 vcom mem.vhd
 # -- Compile MIPS core sub-components
-vcom mips32_cmp.vhd
-vcom mips32_mdu.vhd
-vcom mips32_alu.vhd
-vcom mips32_ctrl.vhd
-vcom mips32_dp.vhd
-# -- Compile MIPS core [architecture::behavior] (behavioural)
+vcom -check_synthesis mips32_cmp.vhd
+vcom -check_synthesis mips32_mdu.vhd
+vcom -check_synthesis mips32_alu.vhd
+vcom -check_synthesis mips32_ctrl.vhd
+vcom -check_synthesis mips32_dp.vhd
+# Compile MIPS core [entity::mips32core]
+vcom -check_synthesis mips32core.vhd
+# Compile MIPS core [architecture::behavior] (behavioural)
 vcom mips32core_arch_behav.vhd
-vcom mips32core_arch_struct.vhd
-# -- Compile MIPS core [entity::mips32core]
-vcom mips32core.vhd
-# -- Compile MIPS system [architecture::struct] (structural)
+vcom -check_synthesis mips32core_arch_struct.vhd
+# Compile MIPS system [architecture::struct] (structural)
 vcom mips32sys.vhd
 
-# -- Compile clock generator
+# Compile clock generator
 vcom clock_gen.vhd
-# -- Compile testset
+# Compile testset
 vcom testset.vhd
+# Compile verifier
+#vcom verifier.vhd
+vcom -2008 -explicit verifier.vhd
 
-# -- Compile testbench (top entity)
+# Compile testbench (top entity)
 vcom tb_mips.vhd
 
 echo "DO: Starting simulation."
@@ -35,6 +39,10 @@ vsim -gui -voptargs=+acc work.tb_mips(tb_arch)
 add wave \
 -logic -label clock {sim:/tb_mips/tb_clk                                                   } \
 -logic -label reset {sim:/tb_mips/tb_resetn                                                } \
+-literal -dec -label GUT_pc            {sim:/tb_mips/gut/cpu/pgc                           } \
+-literal -dec -label DUT_pc            {sim:/tb_mips/dut/cpu/datapath/pgc                  } \
+-literal -dec -label DUT_cmp_r_inp     {sim:/tb_mips/dut/cpu/datapath/cmp/cmp_r_inp        } \
+-literal -dec -label DUT_cmp_l_inp     {sim:/tb_mips/dut/cpu/datapath/cmp/cmp_l_inp        } \
 -logic -label _____ {sim:/tb_mips/tb_redline                                               } \
 -literal -hex -label GUT_iram_addr_out {sim:/tb_mips/gut/iram_addr_out                     } \
 -literal -hex -label GUT_imem          {sim:/tb_mips/gut/imem/memory                       } \
@@ -56,48 +64,33 @@ add wave \
 -literal -dec -label DUT_sreg          {sim:/tb_mips/dut/cpu/datapath/sreg                 } \
 -literal -dec -label GUT_treg          {sim:/tb_mips/gut/cpu/treg                          } \
 -literal -dec -label DUT_treg          {sim:/tb_mips/dut/cpu/datapath/treg                 } \
+-literal -dec -label GUT_multres       {sim:/tb_mips/gut/cpu/exec/mres                     } \
 -literal -dec -label GUT_mdures        {sim:/tb_mips/gut/cpu/mdures                        } \
 -literal -dec -label DUT_mdures        {sim:/tb_mips/dut/cpu/datapath/mdures               } \
--literal -sym -label GUT_multres       {sim:/tb_mips/gut/cpu/exec/mres                     } \
+-logic -label _____ {sim:/tb_mips/tb_redline                                               } \
+-literal -dec -label DUT_ctrl_data     {sim:/tb_mips/dut/cpu/ctrl_data                     } \
+-literal -dec -label DUT_ctrl_func_1   {sim:/tb_mips/dut/cpu/controller/func(1)            } \
+-literal -dec -label DUT_mdu_start_inp {sim:/tb_mips/dut/cpu/datapath/mdu/start_inp        } \
+-literal -dec -label DUT_mdu_mode_inp  {sim:/tb_mips/dut/cpu/datapath/mdu/mode_inp         } \
+-literal -sym -label GUT_mdu_rdy_out   {sim:/tb_mips/gut/cpu/exec/mdu_rdy                  } \
+-literal -sym -label DUT_mdu_rdy_out   {sim:/tb_mips/dut/cpu/datapath/mdu/rdy              } \
+-literal -dec -label DUT_mdu_ctr       {sim:/tb_mips/dut/cpu/datapath/mdu/ctr              } \
 -logic -label _____ {sim:/tb_mips/tb_redline                                               } \
 -literal -hex -label GUT_dram_addr_out {sim:/tb_mips/gut/dram_addr_out                     } \
 -literal -hex -label DUT_dram_addr_out {sim:/tb_mips/dut/dram_addr_out                     } \
 -literal -hex -label GUT_dram_wren_out {sim:/tb_mips/gut/cpu/dbus_wren_out                 } \
--literal -dec -label DUT_dbus_wren_out {sim:/tb_mips/dut/cpu/controller/dbus_wren_out      } \
--literal -dec -label GUT_dram_data_out {sim:/tb_mips/gut/dram_data_out                     } \
--literal -dec -label DUT_dram_data_out {sim:/tb_mips/dut/dram_data_out                     } \
+-literal -dec -label DUT_dram_wren_out {sim:/tb_mips/dut/cpu/controller/dbus_wren_out      } \
 -literal -hex -label GUT_dram_data_inp {sim:/tb_mips/gut/dram_data_inp                     } \
 -literal -hex -label DUT_dram_data_inp {sim:/tb_mips/dut/dram_data_inp                     } \
+-literal -dec -label GUT_dram_data_out {sim:/tb_mips/gut/dram_data_out                     } \
+-literal -dec -label DUT_dram_data_out {sim:/tb_mips/dut/dram_data_out                     } \
 -logic -label _____ {sim:/tb_mips/tb_redline                                               } \
 -literal -hex -label DUT_tsel          {sim:/tb_mips/dut/cpu/datapath/tsel                 } \
 -literal -dec -label DUT_treg          {sim:/tb_mips/dut/cpu/datapath/treg                 } \
 -logic -label _____ {sim:/tb_mips/tb_redline                                               } \
--literal -dec -label DUT_ctrl_func_1   {sim:/tb_mips/dut/cpu/controller/func(1)            } \
--literal -dec -label DUT_mdu_start_inp {sim:/tb_mips/dut/cpu/datapath/mdu/start_inp        } \
--literal -dec -label DUT_mdu_mode_inp  {sim:/tb_mips/dut/cpu/datapath/mdu/mode_inp         } \
--logic -label _____ {sim:/tb_mips/tb_redline                                               } \
--literal -dec -label GUT_dmem          {sim:/tb_mips/gut/dmem/memory(0)                    } \
--literal -dec -label DUT_dmem          {sim:/tb_mips/dut/dmem/memory(0)                    }
- 
-# vsim -gui -voptargs=+acc work.mips32sys(struct)
-
-# #restart -nolist -nowave
-# # -- Add waves to simulation plot
-# add wave \
-   # {sim:/mips32sys/clk                } \
-   # {sim:/mips32sys/resetn             }   
-   
-# vsim -gui -voptargs=+acc work.mem32(behav)
-
-# #restart -nolist -nowave
-# # -- Add waves to simulation plot
-# add wave \
-# -logic        {sim:/mem32/wbs_addr_i         } \
-# -logic        {sim:/mem32/clk                } \
-# -literal -dec {sim:/mem32/resetn             }
-    
-# force -freeze sim:/mem32/wbs_addr_i      00000000000000000000000000000001 0
+-literal -dec -label GUT_dmem          {sim:/tb_mips/gut/dmem/memory                       } \
+-literal -dec -label DUT_dmem          {sim:/tb_mips/dut/dmem/memory                       }
 
 # should run at least 1000 x period
-run {2880 ns}
+run {1600 ns}
 #run {2839 ns}

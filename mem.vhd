@@ -33,7 +33,7 @@ end entity mem32;
 architecture ibehav of mem32 is
     type mem_type is array (natural range <>) of std_logic_vector(31 downto 0);
     signal memory : mem_type(0 to ((2**ADDR_LENGTH)-1));
-    signal daddr  : natural range 0 to ((2**ADDR_LENGTH)-1);
+    signal iaddr  : natural range 0 to ((2**ADDR_LENGTH)-1);
 begin
 
     mem_access : process(clk, resetn)
@@ -62,12 +62,15 @@ begin
     
     -- addr chk : checks if the requested addr is within the limited range
     -- (since the mem is artificially kept small while the addr space allows to point to not allocated mem)
-    daddr <= to_integer(unsigned(bus_addr_inp(ADDR_LENGTH-1 downto 0)));    -- DEBUG: just cut
-    assert unsigned(bus_addr_inp(31 downto ADDR_LENGTH)) = 0 report "dmem: addr request out of range" severity ERROR;
+    -- [causes WARNING in sim due to illegal unsigned(U) conversion]
+    with bus_addr_inp select iaddr <= 
+        0                                                          when "--------------------------------",
+        to_integer(unsigned(bus_addr_inp(ADDR_LENGTH-1 downto 0))) when others; -- DEBUG: just cut if out of range addr request
+
+    assert bus_addr_inp(31 downto ADDR_LENGTH) /= (31 downto ADDR_LENGTH => '0') report "imem: addr request out of range" severity ERROR;
     
     -- always keep the output updated
-    -- [causes WARNING in sim due to illegal unsigned(U) conversion]
-    bus_data_out <= memory(daddr);
+    bus_data_out <= memory(iaddr);
     
 end architecture ibehav;
 
@@ -98,11 +101,14 @@ begin
     
     -- addr chk : checks if the requested addr is within the limited range
     -- (since the mem is artificially kept small while the addr space allows to point to not allocated mem)
-    daddr <= to_integer(unsigned(bus_addr_inp(ADDR_LENGTH-1 downto 0)));    -- DEBUG: just cut
-    assert unsigned(bus_addr_inp(31 downto ADDR_LENGTH)) = 0 report "dmem: addr request out of range" severity ERROR;
+    -- [causes WARNING in sim due to illegal unsigned(U) conversion]
+    with bus_addr_inp select daddr <= 
+        0                                                          when "--------------------------------",
+        to_integer(unsigned(bus_addr_inp(ADDR_LENGTH-1 downto 0))) when others; -- DEBUG: just cut if out of range addr request
+
+    assert bus_addr_inp(31 downto ADDR_LENGTH) /= (31 downto ADDR_LENGTH => '0') report "dmem: addr request out of range" severity ERROR;
     
     -- always keep the output updated
-    -- [causes WARNING in sim due to illegal unsigned(U) conversion]
     bus_data_out <= memory(daddr);
     
 end architecture dbehav;
