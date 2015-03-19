@@ -104,7 +104,7 @@ architecture behav of mips32_dp is
     signal alu_sel  : std_logic_vector(2 downto 0);
     
     -- GPREG bank
-    signal reg      : reg_file(1 to 31);
+    signal reg      : reg_file(0 to 31);    -- DEBUG: change back 0 -> 1
     signal sreg     : u32;
     signal treg     : u32;
     signal dnext    : u32;

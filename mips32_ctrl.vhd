@@ -145,7 +145,7 @@ begin
                     state_next       := fetch;
                 when fetch =>
                     --int0             <= '0';
-                    insten           <= '0';                -- disable instr stroring again; during this step instr is stored to the internal instr_reg
+                    insten           <= '0';                -- disable instr storing again; during this step instr is stored to the internal instr_reg
                     dbus_wren_out    <= '0';
                     den              <= '0';
                     ten              <= '0';
@@ -342,7 +342,7 @@ begin
                     cmp_r_sel_out        <= '-';
                     state_next           := writeback;
                     case optc is
-                        -- Special
+                        -- R instruction (mult,add,and,or,xor,sub,mfhi,mflo,divu)
                         when "000000" =>
                             -- syscall
                             if func = "001100" then

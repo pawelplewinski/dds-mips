@@ -28,13 +28,10 @@ architecture behavior of mips32_mdu is
     signal hireg_nxt     : unsigned(31 downto 0);
     signal ctr           : integer range 31 downto 0;
     signal rdy           : std_logic;
-    signal rdy_nxt       : std_logic;
     signal start_inp_tmp : std_logic;
-    --signal cmode     : std_logic;
 begin
     calc : process(clk, resetn)
         -- mult and divu vars
-        --variable mres : signed(63 downto 0);
         variable runp : std_logic;
         -- mult vars
         variable br,nbr : std_logic_vector(31 downto 0);
@@ -46,7 +43,6 @@ begin
             loreg         <= (others => '0');
             ctr           <= 0;
             rdy           <= '0';
-            --rdy_nxt       <= '0';
             start_inp_tmp <= '0';
         elsif rising_edge(clk) then
             -- save start impulse 
@@ -176,8 +172,8 @@ begin
                         end if ;
                     end if;
                 end if;
-                hireg <= std_logic_vector(acqr(63 downto 32));
-                loreg <= std_logic_vector(acqr(31 downto  0));
+                hireg <= acqr(63 downto 32);
+                loreg <= acqr(31 downto  0);
             else -- reset all if no operation (MULT or DIVU) is selected
                 ctr           <= 0;
                 rdy           <= '0';
@@ -190,8 +186,8 @@ begin
 
     -- read inputs into local regs    
     rdy_out    <= rdy;
-    mdu_hi_out <= std_logic_vector(hireg);
-    mdu_lo_out <= std_logic_vector(loreg);
+    mdu_hi_out <= hireg;
+    mdu_lo_out <= loreg;
     -- for divu
     hireg_nxt  <= unsigned(hireg(30 downto 0) & mdu_l_inp(ctr));
     

@@ -67,7 +67,7 @@ begin
         0                                                          when "--------------------------------",
         to_integer(unsigned(bus_addr_inp(ADDR_LENGTH-1 downto 0))) when others; -- DEBUG: just cut if out of range addr request
 
-    assert bus_addr_inp(31 downto ADDR_LENGTH) /= (31 downto ADDR_LENGTH => '0') report "imem: addr request out of range" severity ERROR;
+    --assert bus_addr_inp(31 downto ADDR_LENGTH) /= (31 downto ADDR_LENGTH => '0') report "imem: addr request out of range" severity ERROR;
     
     -- always keep the output updated
     bus_data_out <= memory(iaddr);
@@ -104,9 +104,12 @@ begin
     -- [causes WARNING in sim due to illegal unsigned(U) conversion]
     with bus_addr_inp select daddr <= 
         0                                                          when "--------------------------------",
+        0                                                          when "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        0                                                          when "00------------------------------",
+        0                                                          when "00XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
         to_integer(unsigned(bus_addr_inp(ADDR_LENGTH-1 downto 0))) when others; -- DEBUG: just cut if out of range addr request
 
-    assert bus_addr_inp(31 downto ADDR_LENGTH) /= (31 downto ADDR_LENGTH => '0') report "dmem: addr request out of range" severity ERROR;
+    --assert bus_addr_inp(31 downto ADDR_LENGTH) /= (31 downto ADDR_LENGTH => '0') report "dmem: addr request out of range" severity ERROR;
     
     -- always keep the output updated
     bus_data_out <= memory(daddr);

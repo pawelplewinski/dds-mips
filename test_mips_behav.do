@@ -1,3 +1,6 @@
+# Disable NumericStd and NumericBit warnigns (see also modelsim.ini)
+set NumericStdNoWarnings 1
+
 echo "DO: Quitting simulation if runnning."
 # -- value [@time:{100ns} or percentaged: 50]
 quit -sim
@@ -45,6 +48,7 @@ add wave \
 -literal -dec -label DUT_cmp_l_inp     {sim:/tb_mips/dut/cpu/datapath/cmp/cmp_l_inp        } \
 -logic -label _____ {sim:/tb_mips/tb_redline                                               } \
 -literal -hex -label GUT_iram_addr_out {sim:/tb_mips/gut/iram_addr_out                     } \
+-literal -hex -label GUT_iram_addr_out {sim:/tb_mips/dut/iram_addr_out                     } \
 -literal -hex -label GUT_imem          {sim:/tb_mips/gut/imem/memory                       } \
 -literal -hex -label GUT_iram_data_inp {sim:/tb_mips/gut/iram_data_inp                     } \
 -literal -sym -label GUT_state         {sim:/tb_mips/gut/cpu/state                         } \

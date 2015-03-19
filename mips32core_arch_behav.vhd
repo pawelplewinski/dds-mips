@@ -7,7 +7,7 @@ architecture behavior of mips32core is
 
     -- Type declarations
     subtype u32_stype       is unsigned(31 downto 0);
-    subtype u64_stype       is unsigned(63 downto 0);   
+    subtype u64_stype       is unsigned(63 downto 0);
     type reg_file_type      is array (natural range <>) of u32_stype;
     type op_type            is (no_op, add_op, addi_op, and_op, andi_op, beq_op, bgtz_op, divu_op, j_op, lui_op, lw_op, mfhi_op, mflo_op, mult_op, or_op, ori_op, sub_op, sw_op, syscall, xor_op, r_nop);
     type inst_state_type    is (init,fetch,decode,execute,writeback);
@@ -126,7 +126,7 @@ begin
                 when init =>
                     state_nxt       <= fetch;           -- Update state
                 when fetch => 
-                    inst        <= ibus_data_inp;
+                    inst            <= ibus_data_inp;
                     state_nxt       <= decode;          -- Update state
                 when decode =>
                     op_state    <= getOp(optc,func);    -- Update op state
@@ -159,9 +159,10 @@ begin
                         -- when "100011" | "101011" =>
                         -- load instructions ( lw )
                         when "100011" =>
-                            imval(15 downto 0) <= unsigned(inst(15 downto 0));
+                            -- imval(15 downto 0) <= unsigned(inst(15 downto 0));
                             t_sel <= to_integer(unsigned(taddr));
-                            s_sel <= to_integer(unsigned(saddr));
+                            -- s_sel <= to_integer(unsigned(saddr));
+                            eaddr <= (reg(to_integer(unsigned(saddr))) + ((31 downto 15 => inst(15)) & unsigned(inst(15 downto 1)))) srl 2;
                         -- store instructions ( sw )    
                         when "101011" =>
                             --imval(15 downto 0) <= unsigned(inst(15 downto 0));
@@ -171,7 +172,8 @@ begin
                             eaddr <= (reg(to_integer(unsigned(saddr))) + ((31 downto 15 => inst(15)) & unsigned(inst(15 downto 1)))) srl 2;
                             dbus_data_out <= std_logic_vector(reg(to_integer(unsigned(taddr))));
                         -- Other instructions not implemented, count as NOP
-                        when others => 
+                        when others =>
+                            assert false report "DEBUG: Undefined operation call." severity warning;
                             optc  <= "000000";
                             func  <= "000000";
                             d_sel <= 0;
@@ -183,7 +185,7 @@ begin
                     -- Now the instruction is actually executed
                     state_next := writeback; -- Update state
                     case optc is
-                        -- Special
+                        -- R instruction (mult,add,and,or,xor,sub,mfhi,mflo,divu)
                         when "000000" =>
                             -- syscall;
                             if      func = "001100" then
@@ -308,8 +310,15 @@ begin
                             pgc_next <= pgc + 1;
                         -- LW
                         when "100011" =>
-                            eaddr <= sreg + ((31 downto 16 => imval(15)) & imval(15 downto 0));
+                            --eaddr <= sreg + ((31 downto 16 => imval(15)) & imval(15 downto 0));
                             pgc_next <= pgc + 1;
+                            -- only write as long as destination reg addr is not $0
+                            if t_sel /= 0 then
+                                reg(t_sel) <= unsigned(dbus_data_inp);
+                            else
+                                -- DEBUG: sys error interrupt
+                                assert false report "DEBUG: Detected write attempt for $0 (lw)." severity error;
+                            end if;
                         -- SW
                         when "101011" =>
                             dbus_wren_out <= '0';
@@ -331,13 +340,13 @@ begin
                             end if;
                         -- LW
                         when  "100011" =>
-                            -- only write as long as destination reg addr is not $0
-                            if t_sel /= 0 then
-                                reg(t_sel) <= unsigned(dbus_data_inp);
-                            else
-                                -- DEBUG: sys error interrupt
-                                assert false report "DEBUG: Detected write attempt for $0 (lw)." severity error;
-                            end if;
+                            -- -- only write as long as destination reg addr is not $0
+                            -- if t_sel /= 0 then
+                                -- reg(t_sel) <= unsigned(dbus_data_inp);
+                            -- else
+                                -- -- DEBUG: sys error interrupt
+                                -- assert false report "DEBUG: Detected write attempt for $0 (lw)." severity error;
+                            -- end if;
                         -- SW
                         when  "101011" =>
                             dbus_wren_out <= '0';       -- 
