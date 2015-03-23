@@ -93,7 +93,16 @@ add wave \
 -literal -dec -label DUT_treg          {sim:/tb_mips/dut/cpu/datapath/treg                 } \
 -logic -label _____ {sim:/tb_mips/tb_redline                                               } \
 -literal -dec -label GUT_dmem          {sim:/tb_mips/gut/dmem/memory                       } \
--literal -dec -label DUT_dmem          {sim:/tb_mips/dut/dmem/memory                       }
+-literal -dec -label DUT_dmem          {sim:/tb_mips/dut/dmem/memory                       } \
+-logic -label _____ {sim:/tb_mips/tb_redline                                               } 
+
+# psl test
+add wave /tb_mips/dut/cpu/controller/ctrl_states_init \
+	/tb_mips/dut/cpu/controller/ctrl_states_fetch \
+	/tb_mips/dut/cpu/controller/ctrl_states_decode \
+	/tb_mips/dut/cpu/controller/ctrl_states_exec \
+	/tb_mips/dut/cpu/controller/ctrl_states_writeback
+
 
 # should run at least 1000 x period
 run {1600 ns}
