@@ -102,11 +102,12 @@ architecture behavior of mips32_ctrl is
     
 begin
 -- PSL default clock is rising_edge(clk);
-
+--- Tests for mips state FSM
 -- PSL ctrl_states_init: assert always ((state=init) -> next_e[1 to 5] (state=fetch));	
 -- PSL ctrl_states_fetch: assert always ((state=fetch) -> next (state=decode));	
 -- PSL ctrl_states_decode: assert always ((state=decode) -> next (state=execute));	
--- PSL ctrl_states_exec: assert always ((state=execute) -> next (state=writeback or state=execute));	
+-- PSL ctrl_states_exec_normal: assert always ((state=execute and op_state /= mult_op and op_state /= divu_op) -> next (state=writeback));	
+-- PSL ctrl_states_exec_mult: assert always ((state=execute and (op_state = mult_op and op_state = divu_op)) -> next (state=writeback or state=execute));	
 -- PSL ctrl_states_writeback: assert always ((state=writeback) -> next (state=fetch));	
 
     ctrl : process(clk, resetn)

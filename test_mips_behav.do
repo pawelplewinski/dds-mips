@@ -100,7 +100,8 @@ add wave \
 add wave /tb_mips/dut/cpu/controller/ctrl_states_init \
 	/tb_mips/dut/cpu/controller/ctrl_states_fetch \
 	/tb_mips/dut/cpu/controller/ctrl_states_decode \
-	/tb_mips/dut/cpu/controller/ctrl_states_exec \
+	/tb_mips/dut/cpu/controller/ctrl_states_exec_normal \
+	/tb_mips/dut/cpu/controller/ctrl_states_exec_mult \
 	/tb_mips/dut/cpu/controller/ctrl_states_writeback
 
 
