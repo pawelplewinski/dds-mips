@@ -14,7 +14,7 @@ entity mips32_mdu is
     mdu_hi_out : out std_logic_vector(31 downto 0);
     mdu_lo_out : out std_logic_vector(31 downto 0);
     
-    mode_inp   : in  std_logic;                         -- selects mult(0) or divu(0)
+    mode_inp   : in  std_logic;                         -- selects mult(0) or divu(1)
     start_inp  : in  std_logic;
     rdy_out    : out std_logic;
     
@@ -30,6 +30,9 @@ architecture behavior of mips32_mdu is
     signal rdy           : std_logic;
     signal start_inp_tmp : std_logic;
 begin
+	-- PSL default clock is rising_edge(clk);
+
+	--PSL mdu_cycles_cnt: assert always (start_inp -> next[32] (rdy));
     calc : process(clk, resetn)
         -- mult and divu vars
         variable runp : std_logic;
