@@ -102,9 +102,17 @@ add wave /tb_mips/dut/cpu/controller/ctrl_states_init \
 	/tb_mips/dut/cpu/controller/ctrl_states_decode \
 	/tb_mips/dut/cpu/controller/ctrl_states_exec_normal \
 	/tb_mips/dut/cpu/controller/ctrl_states_exec_mult \
-	/tb_mips/dut/cpu/controller/ctrl_states_writeback
+	/tb_mips/dut/cpu/controller/ctrl_states_writeback \
+	/tb_mips/dut/cpu/datapath/mdu/mdu_cycles_cnt  \
+	/tb_mips/dut/cpu/datapath/dp_ibus_addr \
+	/tb_mips/dut/cpu/datapath/dp_reset_pgc \
+	/tb_mips/dut/cpu/datapath/dp_reset_reg \
+	/tb_mips/dut/cpu/datapath/dp_reset_inst \
+	/tb_mips/dut/cpu/datapath/dp_pgc_next
+	# /tb_mips/dut/cpu/datapath/alu/alu_carry \
 
 
+	
 # should run at least 1000 x period
 run {1600 ns}
 #run {2839 ns}

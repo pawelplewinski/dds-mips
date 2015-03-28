@@ -15,6 +15,7 @@ end entity mips32_alu;
 architecture behav of mips32_alu is
     signal alu_res : unsigned (32 downto 0);  -- 33 bit (incl carry bit)
 begin
+	--PSL alu_carry: assert always (func_sel = "000") -> (alu_cout = alu_res(32));
     with func_sel select alu_res <=
         unsigned(alu_l_inp(31) & alu_l_inp) + unsigned(alu_r_inp(31) & alu_r_inp) when "000",   -- add
         unsigned(alu_l_inp(31) & alu_l_inp) - unsigned(alu_r_inp(31) & alu_r_inp) when "010",   -- sub
