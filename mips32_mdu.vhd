@@ -26,7 +26,10 @@ architecture behavior of mips32_mdu is
     --signal cmode : std_logic;
     signal ctr : integer range 31 downto 0 := 0;
     signal rdy : std_logic := '0';
-begin
+	begin
+	-- PSL default clock is rising_edge(clk);
+	
+	--PSL mdu_cycles_cnt: assert always (start_i -> next[32] (rdy)) abort not resetn;
     calc : process(clk, resetn) 
     begin
 	if resetn = '0' then
