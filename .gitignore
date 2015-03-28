@@ -1,5 +1,11 @@
 *bak
+*mpf
+*mti
 output_files/**
 db/**
+sys/**
+**/out/**
 incremental_db/**
 simulation/**
+**/work/**
+wlf*
