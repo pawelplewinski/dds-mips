@@ -108,7 +108,9 @@ add wave /tb_mips/dut/cpu/controller/ctrl_states_init \
 	/tb_mips/dut/cpu/datapath/dp_reset_pgc \
 	/tb_mips/dut/cpu/datapath/dp_reset_reg \
 	/tb_mips/dut/cpu/datapath/dp_reset_inst \
-	/tb_mips/dut/cpu/datapath/dp_pgc_next
+	/tb_mips/dut/cpu/datapath/dp_pgc_next \
+	/tb_mips/dut/dmem/mem_o_data \
+	/tb_mips/dut/imem/mem_i_data
 	# /tb_mips/dut/cpu/datapath/alu/alu_carry \
 
 
