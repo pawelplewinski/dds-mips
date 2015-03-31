@@ -35,7 +35,8 @@ architecture structural of mips32core is
 	    alu_l_sel_i : in std_logic;
 	    alu_r_sel_i : in std_logic;
 	    
-	    -- MDU control
+	    -- MDU control/status
+	    mdu_mode_i : in std_logic;
 	    mdu_rdy_o : out std_logic;
 	    mdu_start_i : in std_logic;
 	
@@ -74,7 +75,8 @@ architecture structural of mips32core is
 	    alu_l_sel_o : out std_logic;
 	    alu_r_sel_o : out std_logic;
 	    
-	    -- MDU control
+	    -- MDU control/status
+	    mdu_mode_o : out std_logic;
 	    mdu_rdy_i : in std_logic;
 	    mdu_start_o : out std_logic;
 	
@@ -106,6 +108,7 @@ architecture structural of mips32core is
     signal alu_l_sel : std_logic;
     signal alu_r_sel : std_logic;
     
+    signal mdu_mode : std_logic;
     signal mdu_rdy : std_logic;
     signal mdu_start : std_logic;
 
@@ -137,6 +140,7 @@ begin
 	alu_func_sel_i => alu_func_sel,
 	alu_l_sel_i => alu_l_sel,
 	alu_r_sel_i => alu_r_sel,
+	mdu_mode_i => mdu_mode,
 	mdu_start_i => mdu_start,
 	mdu_rdy_o => mdu_rdy,
 	cmp_r_sel_i => cmp_r_sel,
@@ -163,6 +167,7 @@ begin
 	alu_func_sel_o => alu_func_sel,
 	alu_l_sel_o => alu_l_sel,
 	alu_r_sel_o => alu_r_sel,
+	mdu_mode_o => mdu_mode,
 	mdu_start_o => mdu_start,
 	mdu_rdy_i => mdu_rdy,
 	cmp_r_sel_o => cmp_r_sel,

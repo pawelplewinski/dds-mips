@@ -23,7 +23,8 @@ entity mips32_ctrl is
 	alu_l_sel_o : out std_logic;
 	alu_r_sel_o : out std_logic;
 	
-	-- MDU control
+	-- MDU control/status
+	mdu_mode_o : out std_logic;
 	mdu_rdy_i : in std_logic;
 	mdu_start_o : out std_logic;
 	
@@ -45,7 +46,8 @@ end entity mips32_ctrl;
 architecture behavior of mips32_ctrl is
     type Inst_state is (init,fetch,decode,execute,writeback);
     signal state : Inst_state := init;
-
+    signal mdu_start : std_logic := '0';
+    
     alias optc : std_logic_vector(5 downto 0) is inst_i(31 downto 26);
     alias func : std_logic_vector(5 downto 0) is inst_i(5 downto 0);    
     alias imval : std_logic_vector(25 downto 0) is inst_i(25 downto 0);
@@ -92,6 +94,7 @@ architecture behavior of mips32_ctrl is
     end getOp;
     signal op_state  : op_type := no_op;
 begin
+    mdu_start_o <= mdu_start;
     ctrl : process(clk, resetn)
     begin
 	if resetn = '0' then
@@ -107,7 +110,8 @@ begin
 	    alu_func_sel_o <= (others => '-');
 	    alu_l_sel_o <= '-';
 	    alu_r_sel_o <= '-';
-	    mdu_start_o <= '0';
+	    mdu_start <= '0';
+	    mdu_mode_o <= '-';
 	    cmp_r_sel_o <= '-';
 	    ctrl_data_o <= (others => '-');
 	elsif rising_edge(clk) then
@@ -125,7 +129,8 @@ begin
 		    alu_func_sel_o <= (others => '-');
 		    alu_l_sel_o <= '-';
 		    alu_r_sel_o <= '-';
-		    mdu_start_o <= '0';
+		    mdu_start <= '0';
+		    mdu_mode_o <= '-';
 		    cmp_r_sel_o <= '-';
 		    ctrl_data_o <= (others => '-');
 		when fetch =>
@@ -138,7 +143,8 @@ begin
 		    tsrc <= (others => '-');
 		    dsrc <= (others => '-');
 		    pgcen <= '0';
-		    mdu_start_o <= '0';
+		    mdu_start <= '0';
+		    mdu_mode_o <= '-';
 		    cmp_r_sel_o <= '-';
 		    alu_func_sel_o <= (others => '-');
 		    alu_l_sel_o <= '-';
@@ -155,28 +161,38 @@ begin
 			case func is
 			-- add, sub, and, or, xor
 			when "100000"|"100010"|"100100"|"100101"|"100110" =>
-			    mdu_start_o <= '0';
+			    mdu_start <= '0';
+			    mdu_mode_o <= '-';
 			    den <= '1';
 			    dsrc <= "00";
-			-- mult, divu
-			when "011000"|"011011"  =>
-			    mdu_start_o <= '1';
-			    -- Execute iterative algorithm;
+			-- mult
+			when "011000" =>
+			    mdu_start <= '1';
+			    mdu_mode_o <= '1';
+			    den <= '0';
+			    dsrc <= (others => '-');
+			-- divu
+			when "011011"  =>
+			    mdu_start <= '1';
+			    mdu_mode_o <= '0';
 			    den <= '0';
 			    dsrc <= (others => '-');
 			-- mfhi
 			when "010000" =>
-			    mdu_start_o <= '0';
+			    mdu_start <= '0';
+			    mdu_mode_o <= '-';
 			    den <= '1';
 			    dsrc <= "01";
 			-- mflo
 			when "010010" =>
-			    mdu_start_o <= '0';
+			    mdu_start <= '0';
+			    mdu_mode_o <= '-';
 			    den <= '1';
 			    dsrc <= "10";
 			-- other special instructions are not implemented
 			when others => null;  
-			    mdu_start_o <= '0';
+			    mdu_start <= '0';
+			    mdu_mode_o <= '-';
 			    den <= '0';
 			    dsrc <= (others => '-');
 			end case;
@@ -203,7 +219,8 @@ begin
 			tsrc <= (others => '-');
 			dsrc <= (others => '-');
 			pgcen <= '1';
-			mdu_start_o <= '0';
+			mdu_start <= '0';
+			mdu_mode_o <= '-';
 			cmp_r_sel_o <= '-';
 			-- nPGC := PGC & 0xFC000000
 			alu_func_sel_o <= "100";
@@ -218,7 +235,8 @@ begin
 			tsrc <= (others => '-');
 			dsrc <= (others => '-');
 			pgcen <= '1';
-			mdu_start_o <= '0';
+			mdu_start <= '0';
+			mdu_mode_o <= '-';
 			-- t reg
 			cmp_r_sel_o <= '1';
 			-- nPGC := PGC + 1
@@ -234,7 +252,8 @@ begin
 			tsrc <= (others => '-');
 			dsrc <= (others => '-');
 			pgcen <= '1';
-			mdu_start_o <= '0';
+			mdu_start <= '0';
+			mdu_mode_o <= '-';
 			-- zero
 			cmp_r_sel_o <= '0';
 			-- nPGC := PGC + 1
@@ -254,7 +273,8 @@ begin
 			    tsrc <= "00";
 			end if;
 			pgcen <= '0';
-			mdu_start_o <= '0';
+			mdu_start <= '0';
+			mdu_mode_o <= '-';
 			cmp_r_sel_o <= '-';
 			alu_func_sel_o <= optc(2 downto 0);
 			alu_l_sel_o <= '0';
@@ -274,7 +294,8 @@ begin
 			ten <= '1';
 			tsrc <= "10";
 			pgcen <= '0';
-			mdu_start_o <= '0';
+			mdu_start <= '0';
+			mdu_mode_o <= '-';
 			cmp_r_sel_o <= '-';
 			alu_func_sel_o <= "000";
 			-- eaddr := $s + offset
@@ -289,7 +310,8 @@ begin
 			ten <= '0';
 			tsrc <= (others => '-');
 			pgcen <= '0';
-			mdu_start_o <= '0';
+			mdu_start <= '0';
+			mdu_mode_o <= '-';
 			cmp_r_sel_o <= '-';
 			alu_func_sel_o <= "000";
 			-- eaddr := $s + offset
@@ -304,7 +326,8 @@ begin
 			ten <= '0';
 			tsrc <= (others => '-');
 			pgcen <= '0';
-			mdu_start_o <= '0';
+			mdu_start <= '0';
+			mdu_mode_o <= '-';
 			cmp_r_sel_o <= '-';
 			alu_func_sel_o <= (others => '-');
 			alu_l_sel_o <= '-';
@@ -319,7 +342,8 @@ begin
 		    den <= '0';
 		    dsrc <= (others => '-');
 		    insten <= '0';
-		    mdu_start_o <= '0';
+		    mdu_start <= '0';
+		    mdu_mode_o <= '-';
 		    cmp_r_sel_o <= '-';
 		    case optc is
 		    -- Special
@@ -421,7 +445,7 @@ begin
 		    alu_func_sel_o <= (others => '-');
 		    alu_l_sel_o <= '-';
 		    alu_r_sel_o <= '-';
-		    mdu_start_o <= '0';
+		    mdu_start <= '0';
 		    cmp_r_sel_o <= '-';
 		    ctrl_data_o <= (others => '-');
 	    end case;

@@ -35,6 +35,7 @@ entity mips32_dp is
 	alu_r_sel_i : in std_logic;
 	
 	-- MDU control
+	mdu_mode_i : in std_logic;
 	mdu_rdy_o : out std_logic;
 	mdu_start_i : in std_logic;
 	
@@ -172,7 +173,7 @@ begin
 	mdu_r_i => std_logic_vector(treg),
 	mdu_hi_o => hireg,
 	mdu_lo_o => loreg,
-	mode_i => '0',
+	mode_i => mdu_mode_i,
 	rdy_o => mdu_rdy_o,
 	start_i => mdu_start_i,
 	clk => clk,
