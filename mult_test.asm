@@ -1,13 +1,24 @@
 .text
-       andi $2,$2, 0
-       ori $2,$2, 21
-       andi $3,$3, 0
-       ori $3,$3, 14
-       mult $2, $3
-       mfhi $4
-       mflo $5        
-       sw $4, 0($0)                
-       sw $5, 0($1)
-       syscall
-end_loop: nop
-       j end_loop
+	#Test signed multiply
+	andi $3,$3,0
+	addi $3,$3,-25
+	andi $4,$4,0
+	ori $4,$4,5
+	mult $3,$4
+	#Switch places
+	mult $4,$3
+	#Now try non-negative
+	andi $3,$3,0
+	addi $3,$3, 25
+	mult $3,$4
+	#And two negatives
+	andi $3,$3,0
+	addi $3,$3,-25
+	andi $4,$4,0
+	addi $4,$4,-5
+	mult $3,$4
+	#Test complete
+	syscall
+endless_loop:
+	j endless_loop
+	
