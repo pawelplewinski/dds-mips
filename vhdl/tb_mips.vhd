@@ -8,10 +8,9 @@ use std.textio.all;
 
 entity tb_mips is
     generic(
-        IA_LEN   : natural  := 8;
-        DA_LEN   : natural  := 4;
-        SYS_32   : positive := 32;
-        PGM_FILE : string := "memwr.txt");
+        IMEM_LEN   : natural  := 64;
+        DMEM_LEN   : natural  := 64;
+        PGM_FILE : string := "gcd.txt");
 end entity tb_mips;
 
 architecture tb_arch of tb_mips is
@@ -19,31 +18,31 @@ architecture tb_arch of tb_mips is
     signal resetn   : std_logic;
     
     component mips32sys_gut is 
-	generic (
-	      PGM_FILE   : string := "pgm_mem.txt";
-        SYS_32      : positive := 32;
-        IA_LEN      : natural  :=  9;
-		DA_LEN      : natural  :=  6;
-		GPIO_LEN    : natural  :=  8);
-	port(
-	end_sim	    : out std_logic;
+    generic (
+	PGM_FILE : string := "pgm_mem.txt";
+        SYS_32   : positive := 32;
+        DMEM_LEN   : natural  :=  64;  --In bytes
+        IMEM_LEN   : natural  :=  64  --In 32-bit words;
+        );
+    port(
+        clk      : in  std_logic;
+        resetn   : in  std_logic;
         
-        clk         : in  std_logic;
-        resetn      : in  std_logic);
+        end_sim	 : out std_logic);
     end component mips32sys_gut;
     
     component mips32sys_dut is 
-	generic (
-	      PGM_FILE   : string := "pgm_mem.txt";
-        SYS_32      : positive := 32;
-        IA_LEN      : natural  :=  9;
-		DA_LEN      : natural  :=  6;
-		GPIO_LEN    : natural  :=  8);
-	port(
-	end_sim	    : out std_logic;
+    generic (
+	PGM_FILE : string := "pgm_mem.txt";
+        SYS_32   : positive := 32;
+        DMEM_LEN   : natural  :=  64;  --In bytes
+        IMEM_LEN   : natural  :=  64  --In 32-bit words
+	);
+    port(
+        clk      : in  std_logic;
+        resetn   : in  std_logic;
         
-        clk         : in  std_logic;
-        resetn      : in  std_logic);
+        end_sim	 : out std_logic);
     end component mips32sys_dut;
     
     signal gut_end_sim : std_logic; 
@@ -53,11 +52,9 @@ begin
     -- Connect MIPS systems
     gut : mips32sys_gut
     generic map(
-		PGM_FILE	=> PGM_FILE,
-		SYS_32      	=> SYS_32,
-		IA_LEN      	=> IA_LEN,
-		DA_LEN      	=> DA_LEN,
-		GPIO_LEN    	=> 8)
+		PGM_FILE	    => PGM_FILE,
+		IMEM_LEN     => IMEM_LEN,
+		DMEM_LEN     => DMEM_LEN)
     port map(
 	    end_sim 	=> gut_end_sim,
 	    clk         => clk,
@@ -68,11 +65,9 @@ begin
     -- Connect MIPS systems
     dut : mips32sys_dut
     generic map(
-		PGM_FILE	=> PGM_FILE,
-		SYS_32      	=> SYS_32,
-		IA_LEN      	=> IA_LEN,
-		DA_LEN      	=> DA_LEN,
-		GPIO_LEN    	=> 8)
+		PGM_FILE	    => PGM_FILE,
+		IMEM_LEN     => IMEM_LEN,
+		DMEM_LEN     => DMEM_LEN)
     port map(
 	    end_sim 	=> dut_end_sim,
 	    clk         => clk,

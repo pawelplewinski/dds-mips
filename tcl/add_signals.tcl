@@ -28,6 +28,10 @@ add wave -noupdate -divider -height 32 "PGC register"
 add wave -position insertpoint  \
 sim:/tb_mips/gut/cpu/pgc \
 sim:/tb_mips/dut/cpu/datapath/pgc
+add wave -noupdate -divider -height 32 "Data memory"
+add wave -position insertpoint  \
+sim:/tb_mips/gut/d_mem/memory \
+sim:/tb_mips/dut/d_mem/memory
 add wave -noupdate -divider -height 32 "Data bus"
 add wave -position insertpoint  \
 sim:/tb_mips/gut/dbus_a \

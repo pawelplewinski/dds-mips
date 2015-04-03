@@ -6,7 +6,7 @@
 	andi $2,$2, 0
 loop1:
 	beq $2, $4, loop1_end
-	addi $3, $2, 1
+	addi $3, $2, 12345
 	sw $3, 0($5)
 	addi $2, $2, 1
 	addi $5, $5, 4

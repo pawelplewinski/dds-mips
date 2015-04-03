@@ -14,44 +14,49 @@ architecture behavior of mips32core is
 	signal loreg : u32;
 	type Inst_state is (init,fetch,decode,execute,writeback);
 	signal state : Inst_state := init;
-	signal pgc : unsigned(IA_LEN-1 downto 0);
-	signal inst : std_logic_vector(31 downto 0);
+	signal pgc : u32 := (others => '0');
 	
-	signal d_sel : integer range 0 to 31;
-	signal s_sel : integer range 0 to 31;
-	signal t_sel : integer range 0 to 31;
-	signal imval : unsigned(25 downto 0);
-	signal pgc_next : unsigned(IA_LEN-1 downto 0);
-	signal eaddr : u32;
-	signal mductr : integer range 0 to 33 := 32;
-	alias optc : std_logic_vector(5 downto 0) is inst(31 downto 26);
-	alias saddr : std_logic_vector(4 downto 0) is inst(25 downto 21);
-	alias taddr : std_logic_vector(4 downto 0) is inst(20 downto 16);
-	alias daddr : std_logic_vector(4 downto 0) is inst(15 downto 11);
-	alias func : std_logic_vector(5 downto 0) is inst(5 downto 0);
+	signal d_sel : integer range 0 to 31 := 0;
+	signal s_sel : integer range 0 to 31 := 0;
+	signal t_sel : integer range 0 to 31 := 0;
+	signal imval : u32 := (others => '0');
+	signal pgc_next : u32 := (others => '0');
+	signal eaddr : u32 := (others => '0');
+	signal mductr : integer range 0 to 32 := 32;
+	
 begin
     sreg <= (others => '0') when s_sel = 0 else
 	reg(s_sel);
     treg <= (others => '0') when t_sel = 0 else
 	reg(t_sel);
-    dbus_a_o <= std_logic_vector(eaddr(DA_LEN-1 downto 0));
+	
+    dbus_a_o <= std_logic_vector(eaddr);
+    dbus_d_o <= std_logic_vector(treg);
+			
     exec : process(clk, resetn)
-      variable addres : unsigned(32 downto 0);
-      variable mres : unsigned(63 downto 0);
-      variable state_next : Inst_state := init;
+	variable addres : unsigned(32 downto 0);
+	variable mres : signed(63 downto 0);
+	variable state_next : Inst_state := init;
+	variable inst : std_logic_vector(31 downto 0) := (others => '0');
+	alias optc : std_logic_vector(5 downto 0) is inst(31 downto 26);
+	alias saddr : std_logic_vector(4 downto 0) is inst(25 downto 21);
+	alias taddr : std_logic_vector(4 downto 0) is inst(20 downto 16);
+	alias daddr : std_logic_vector(4 downto 0) is inst(15 downto 11);
+	alias func : std_logic_vector(5 downto 0) is inst(5 downto 0);
     begin
 	if(resetn = '0') then
 	    for i in 1 to 31 loop
 		reg(i) <= (others => '0');
 	    end loop;
+	    int0 <= '0';
 	    state <= init;
 	    pgc <= (others => '0');
 	    imval <= (others => '0');
 	    hireg <= (others => '0');
 	    loreg <= (others => '0');
-	    dbus_a_o <= (others => '0');
-	    dbus_d_o <= (others => '0');
+	    eaddr <= (others => '0');
 	    ibus_a_o <= (others => '0');
+	    inst := (others => '0');
 	    dbus_we_o <= '0';
 	    mductr <= 32;
 	elsif(rising_edge(clk)) then
@@ -61,46 +66,16 @@ begin
 		    state <= fetch;
 		when fetch => 
 		    state <= decode;
-		    inst <= ibus_d_i;
-		when decode => state <= execute;
+		    inst := ibus_d_i;
+		    d_sel <= to_integer(unsigned(daddr));
+		    t_sel <= to_integer(unsigned(taddr));
+		    s_sel <= to_integer(unsigned(saddr));
+		    imval <= (31 downto 26 => '0') & unsigned(inst(25 downto 0));
+		when decode => 
+		    state <= execute;
 		    -- The decoding stage extracts important information from instruction code
 		    -- Normally, during this step all of the control signals in the DP are configured
-		    case optc is
-		    -- R instruction (mult,add,and,or,xor,sub,mfhi,mflo,divu)
-		    when "000000" =>
-			d_sel <= to_integer(unsigned(daddr));
-			t_sel <= to_integer(unsigned(taddr));
-			s_sel <= to_integer(unsigned(saddr));
-		    -- J instruction
-		    when "000010" =>
-			imval(25 downto 0) <= unsigned(inst(25 downto 0));
-		    -- BEQ 
-		    when "000100" =>
-			imval(15 downto 0) <= unsigned(inst(15 downto 0));
-			t_sel <= to_integer(unsigned(taddr));
-			s_sel <= to_integer(unsigned(saddr));
-		    -- BGTZ
-		    when "000111" =>
-			imval(15 downto 0) <= unsigned(inst(15 downto 0));
-			s_sel <= to_integer(unsigned(saddr));
-		    -- I instructions (addi, andi, ori, lui)
-		    when "001000" | "001100" | "001101" | "001111" =>
-			imval(15 downto 0) <= unsigned(inst(15 downto 0));
-			t_sel <= to_integer(unsigned(taddr));
-			s_sel <= to_integer(unsigned(saddr));
-		    -- load instructions (lw)
-		    when "100011" | "101011" =>
-			imval(15 downto 0) <= unsigned(inst(15 downto 0));
-			t_sel <= to_integer(unsigned(taddr));
-			s_sel <= to_integer(unsigned(saddr));
-		    -- Other instructions not implemented, count as NOP
-		    when others => 
-			optc <= "000000";
-			func <= "000000";
-			d_sel <= 0;
-			t_sel <= 0;
-			s_sel <= 0;
-		    end case;
+		    -- But it's useless in this case
 		when execute => 
 		    -- Now the instruction is actually executed
 		    state_next := writeback;
@@ -112,15 +87,34 @@ begin
 			    int0 <= '1';
 			elsif func = "011000" then
 			-- mult
-			    mres := sreg * treg;
-			    hireg <= mres(63 downto 32);
-			    loreg <= mres(31 downto 0);
+			    if treg /= 0 then
+				mres := signed(sreg) * signed(treg);
+				hireg <= unsigned(mres(63 downto 32));
+				loreg <= unsigned(mres(31 downto 0));
+			    else
+				hireg <= (others => '0');
+				loreg <= (others => '0');
+			    end if;
+			    if mductr > 0 then
+				state_next := execute;
+				if treg /= 0 then
+				    mductr <= mductr - 1;
+				else
+				    mductr <= 0;
+				end if;
+			    else
+				state_next := writeback;
+				mductr <= 32;
+			    end if;
 			    -- Execute iterative algorithm
 			-- divu
 			elsif func = "011011" then
 			    if treg /= 0 then
 				hireg <= sreg mod treg;
 				loreg <= sreg / treg;
+			    else
+				hireg <= (others => '0');
+				loreg <= (31 downto 1 => '0') & '1';
 			    end if;
 			    if mductr > 0 then
 				state_next := execute;
@@ -167,23 +161,23 @@ begin
 			pgc_next <= pgc + 1;
 		    -- J instruction
 		    when "000010" =>
-			pgc_next <= imval(IA_LEN-1 downto 0);
+			pgc_next <= imval;
 		    -- BEQ instruction
 		    when "000100" =>
 			-- sign extended add
-			addres := ((32 downto IA_LEN => '0') & pgc) + ((32 downto 16 => imval(15)) & imval(15 downto 0)) + 1;
+			addres := ('0'&pgc) + ((32 downto 16 => imval(15)) & imval(15 downto 0)) + 1;
 			if(sreg = treg) then
-			    pgc_next <= addres(IA_LEN-1 downto 0);
+			    pgc_next <= addres(31 downto 0);
 			else
 			    pgc_next <= pgc + 1;
 			end if;
 		    -- BGTZ instruction
 		    when "000111" =>
 			-- sign extended add
-			addres := ((32 downto IA_LEN => '0') & pgc) + ((32 downto 16 => imval(15)) & imval(15 downto 0)) + 1;
+			addres := ('0'&pgc) + ((32 downto 16 => imval(15)) & imval(15 downto 0)) + 1;
 			-- signed 
 			if(sreg(31) = '0' and (sreg(30 downto 0) > 0)) then
-			    pgc_next <= addres(IA_LEN-1 downto 0);
+			    pgc_next <= addres(31 downto 0);
 			else
 			    pgc_next <= pgc + 1;
 			end if;
@@ -215,7 +209,6 @@ begin
 		    when "101011" =>
 			dbus_we_o <= '1';
 			eaddr <= sreg + ((31 downto 16 => imval(15)) & imval(15 downto 0));
-			dbus_d_o <= std_logic_vector(treg);
 			pgc_next <= pgc + 1;
 		    -- Other instructions not implemented, count as NOP
 		    when others => null;

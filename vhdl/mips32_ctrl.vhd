@@ -18,6 +18,9 @@ entity mips32_ctrl is
 	insten : out std_logic;
 	inst_i : in std_logic_vector(31 downto 0);
 	
+	-- data flow
+	daddren : out std_logic;
+	
 	-- ALU control
 	alu_func_sel_o : out std_logic_vector(2 downto 0);
 	alu_l_sel_o : out std_logic;
@@ -107,6 +110,7 @@ begin
 	    tsrc <= (others => '-');
 	    pgcen <= '0';
 	    insten <= '0';
+	    daddren <= '0';
 	    alu_func_sel_o <= (others => '-');
 	    alu_l_sel_o <= '-';
 	    alu_r_sel_o <= '-';
@@ -126,6 +130,7 @@ begin
 		    tsrc <= (others => '-');
 		    dsrc <= (others => '-');
 		    pgcen <= '0';
+		    daddren <= '0';
 		    alu_func_sel_o <= (others => '-');
 		    alu_l_sel_o <= '-';
 		    alu_r_sel_o <= '-';
@@ -143,6 +148,7 @@ begin
 		    tsrc <= (others => '-');
 		    dsrc <= (others => '-');
 		    pgcen <= '0';
+		    daddren <= '0';
 		    mdu_start <= '0';
 		    mdu_mode_o <= '-';
 		    cmp_r_sel_o <= '-';
@@ -154,10 +160,11 @@ begin
 		    state <= execute;
 		    int0 <= '0';
 		    insten <= '0';
+		    dbus_we_o <= '0';
 		    case optc is
 		    -- special instructions
 		    when "000000" =>
-			dbus_we_o <= '0';
+			daddren <= '0';
 			case func is
 			-- add, sub, and, or, xor
 			when "100000"|"100010"|"100100"|"100101"|"100110" =>
@@ -213,7 +220,7 @@ begin
 			ctrl_data_o <= (others => '-');
 		    -- J instruction
 		    when "000010" =>
-			dbus_we_o <= '0';
+			daddren <= '0';
 			den <= '0';
 			ten <= '0';
 			tsrc <= (others => '-');
@@ -229,7 +236,7 @@ begin
 			ctrl_data_o <= (31 downto 26 => '1') & (25 downto 0 => '0');
 		    -- BEQ
 		    when "000100" =>
-			dbus_we_o <= '0';
+			daddren <= '0';
 			den <= '0';
 			ten <= '0';
 			tsrc <= (others => '-');
@@ -246,7 +253,7 @@ begin
 			ctrl_data_o <= std_logic_vector(to_unsigned(1,32));
 		    -- BGTZ
 		    when "000111" =>
-			dbus_we_o <= '0';
+			daddren <= '0';
 			den <= '0';
 			ten <= '0';
 			tsrc <= (others => '-');
@@ -263,7 +270,7 @@ begin
 			ctrl_data_o <= std_logic_vector(to_unsigned(1,32));
 		    -- I instructions
 		    when "001000" | "001100" | "001101" | "001111" =>
-			dbus_we_o <= '0';
+			daddren <= '0';
 			den <= '0';
 			dsrc <= (others => '-');
 			ten <= '1';
@@ -286,25 +293,9 @@ begin
 			else
 			    ctrl_data_o <= (31 downto 16 => '0') & imval(15 downto 0);
 			end if;
-		    -- LW
-		    when "100011" =>
-			dbus_we_o <= '0';
-			den <= '0';
-			dsrc <= (others => '-');
-			ten <= '1';
-			tsrc <= "10";
-			pgcen <= '0';
-			mdu_start <= '0';
-			mdu_mode_o <= '-';
-			cmp_r_sel_o <= '-';
-			alu_func_sel_o <= "000";
-			-- eaddr := $s + offset
-			alu_l_sel_o <= '0';
-			alu_r_sel_o <= '1';
-			ctrl_data_o <= (31 downto 16 => imval(15)) & imval(15 downto 0);
-		    -- SW
-		    when "101011" =>
-			dbus_we_o <= '1';
+		    -- LW/SW
+		    when "100011"|"101011" =>
+			daddren <= '1';
 			den <= '0';
 			dsrc <= (others => '-');
 			ten <= '0';
@@ -320,7 +311,7 @@ begin
 			ctrl_data_o <= (31 downto 16 => imval(15)) & imval(15 downto 0);
 		    -- Other stuff not implemented
 		    when others =>
-			dbus_we_o <= '0';
+			daddren <= '0';
 			den <= '0';
 			dsrc <= (others => '-');
 			ten <= '0';
@@ -336,9 +327,7 @@ begin
 		    end case;
 		when execute =>
 		    -- Now the instruction is actually executed
-		    dbus_we_o <= '0';
-		    ten <= '0';
-		    tsrc <= (others => '-');
+		    daddren <= '0';
 		    den <= '0';
 		    dsrc <= (others => '-');
 		    insten <= '0';
@@ -348,6 +337,9 @@ begin
 		    case optc is
 		    -- Special
 		    when "000000" =>
+			ten <= '0';
+			tsrc <= (others => '-');
+			dbus_we_o <= '0';
 			-- syscall
 			if func = "001100" then
 			   int0 <= '1';
@@ -386,6 +378,9 @@ begin
 			end if;
 		    -- J instruction
 		    when "000010" =>
+			ten <= '0';
+			tsrc <= (others => '-');
+			dbus_we_o <= '0';
 			state <= writeback;
 			int0 <= '0';
 			-- nPGC := PGC | imval
@@ -396,6 +391,9 @@ begin
 			ctrl_data_o <= (31 downto 26 => '0') & imval;
 		    -- BEQ instruction
 		    when "000100" =>
+			ten <= '0';
+			tsrc <= (others => '-');
+			dbus_we_o <= '0';
 			state <= writeback;
 			int0 <= '0';
 			pgcen <= '1';
@@ -410,6 +408,9 @@ begin
 			end if;
 		    -- BGTZ instruction
 		    when "000111" =>
+			ten <= '0';
+			tsrc <= (others => '-');
+			dbus_we_o <= '0';
 			state <= writeback;
 			int0 <= '0';
 			pgcen <= '1';
@@ -422,7 +423,36 @@ begin
 			else
 			    ctrl_data_o <= (others => '0');
 			end if;
+		    -- LW instruction
+		    when "100011" =>
+			ten <= '1';
+			tsrc <= "10";
+			dbus_we_o <= '0';
+			state <= writeback;
+			int0 <= '0';
+			pgcen <= '1';
+			-- nPGC := PGC + 1
+			alu_func_sel_o <= "000";
+			alu_l_sel_o <= '1';
+			alu_r_sel_o <= '1';
+			ctrl_data_o <= std_logic_vector(to_unsigned(1,32));
+		    -- SW instruction
+		    when "101011" =>
+			ten <= '0';
+			tsrc <= (others => '-');
+			dbus_we_o <= '1';
+			state <= writeback;
+			int0 <= '0';
+			pgcen <= '1';
+			-- nPGC := PGC + 1
+			alu_func_sel_o <= "000";
+			alu_l_sel_o <= '1';
+			alu_r_sel_o <= '1';
+			ctrl_data_o <= std_logic_vector(to_unsigned(1,32));
 		    when others => 
+			ten <= '0';
+			tsrc <= (others => '-');
+			dbus_we_o <= '0';
 			state <= writeback;
 			int0 <= '0';
 			pgcen <= '1';
@@ -442,6 +472,7 @@ begin
 		    dsrc <= (others => '-');
 		    pgcen <= '0';
 		    insten <= '1';
+		    daddren <= '0';
 		    alu_func_sel_o <= (others => '-');
 		    alu_l_sel_o <= '-';
 		    alu_r_sel_o <= '-';

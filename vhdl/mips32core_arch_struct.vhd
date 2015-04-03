@@ -6,17 +6,15 @@ use IEEE.numeric_std.all;
 architecture structural of mips32core is
     component mips32_dp is
 	generic(
-	    WORD_LEN  : natural := 32;
-	    IA_LEN    : natural  :=  9;
-	    DA_LEN    : natural  :=  6);
+	    WORD_LEN  : natural := 32);
 	port(
 	    -- Data bus
-	    dbus_a_o  : out std_logic_vector(DA_LEN-1 downto 0);
+	    dbus_a_o  : out std_logic_vector(WORD_LEN-1 downto 0);
 	    dbus_d_o  : out std_logic_vector(WORD_LEN-1 downto 0);
 	    dbus_d_i  : in  std_logic_vector(WORD_LEN-1 downto 0);
 	    
 	    -- Instruction bus
-	    ibus_a_o  : out std_logic_vector(IA_LEN-1 downto 0);
+	    ibus_a_o  : out std_logic_vector(WORD_LEN-1 downto 0);
 	    ibus_d_i  : in  std_logic_vector(WORD_LEN-1 downto 0);
 	
 	    -- Register control signals
@@ -29,6 +27,9 @@ architecture structural of mips32core is
 	    pgcen : in std_logic;
 	    insten : in std_logic;
 	    inst_o : out std_logic_vector(31 downto 0);
+	    
+	    -- data flow
+	    daddren : in std_logic;
 	    
 	    -- ALU control
 	    alu_func_sel_i : in std_logic_vector(2 downto 0);
@@ -70,6 +71,9 @@ architecture structural of mips32core is
 	    insten : out std_logic;
 	    inst_i : in std_logic_vector(31 downto 0);
 	    
+	    -- data flow
+	    daddren : out std_logic;
+	    
 	    -- ALU control
 	    alu_func_sel_o : out std_logic_vector(2 downto 0);
 	    alu_l_sel_o : out std_logic;
@@ -103,6 +107,8 @@ architecture structural of mips32core is
     signal pgcen : std_logic;
     signal insten : std_logic;
     signal inst : std_logic_vector(31 downto 0);
+    
+    signal daddren : std_logic;
 
     signal alu_func_sel : std_logic_vector(2 downto 0);
     signal alu_l_sel : std_logic;
@@ -121,9 +127,7 @@ architecture structural of mips32core is
 begin
     datapath : mips32_dp
     generic map(
-	WORD_LEN => SYS_32,
-	IA_LEN => IA_LEN,
-	DA_LEN => DA_LEN)
+	WORD_LEN => SYS_32)
     port map(
 	dbus_a_o => dbus_a_o,
 	dbus_d_o => dbus_d_o,
@@ -137,6 +141,7 @@ begin
 	pgcen => pgcen,
 	insten => insten,
 	inst_o => inst,
+	daddren => daddren,
 	alu_func_sel_i => alu_func_sel,
 	alu_l_sel_i => alu_l_sel,
 	alu_r_sel_i => alu_r_sel,
@@ -152,9 +157,7 @@ begin
 
     controller : mips32_ctrl
     generic map(
-	WORD_LEN => SYS_32,
-	IA_LEN => IA_LEN,
-	DA_LEN => DA_LEN)
+	WORD_LEN => SYS_32)
     port map(
 	dbus_we_o => dbus_we_o,
 	den => den,
@@ -164,6 +167,7 @@ begin
 	pgcen => pgcen,
 	insten => insten,
 	inst_i => inst,
+	daddren => daddren,
 	alu_func_sel_o => alu_func_sel,
 	alu_l_sel_o => alu_l_sel,
 	alu_r_sel_o => alu_r_sel,

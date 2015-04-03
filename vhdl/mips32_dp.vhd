@@ -5,17 +5,15 @@ use IEEE.numeric_std.all;
 
 entity mips32_dp is
     generic(
-	WORD_LEN  : natural := 32;
-	IA_LEN    : natural  :=  9;
-	DA_LEN    : natural  :=  6);
+	WORD_LEN  : natural := 32);
     port(
 	-- Data bus
-	dbus_a_o  : out std_logic_vector(DA_LEN-1 downto 0);
+	dbus_a_o  : out std_logic_vector(WORD_LEN-1 downto 0);
         dbus_d_o  : out std_logic_vector(WORD_LEN-1 downto 0);
         dbus_d_i  : in  std_logic_vector(WORD_LEN-1 downto 0);
         
         -- Instruction bus
-        ibus_a_o  : out std_logic_vector(IA_LEN-1 downto 0);
+        ibus_a_o  : out std_logic_vector(WORD_LEN-1 downto 0);
         ibus_d_i  : in  std_logic_vector(WORD_LEN-1 downto 0);
     
 	-- Register control signals
@@ -28,6 +26,9 @@ entity mips32_dp is
 	pgcen : in std_logic;
 	insten : in std_logic;
 	inst_o : out std_logic_vector(31 downto 0);
+	
+	-- data flow
+	daddren : in std_logic;
 	
 	-- ALU control
 	alu_func_sel_i : in std_logic_vector(2 downto 0);
@@ -114,16 +115,17 @@ architecture behavior of mips32_dp is
     signal inst : std_logic_vector(WORD_LEN-1 downto 0);
     signal pgc : u32 		:= (others => '0');
     signal pgcnext : u32 	:= (others => '0');
+    signal daddr : u32		:= (others => '0');
     
     signal ssel : integer range 0 to 31;
     signal tsel : integer range 0 to 31;
     signal dsel : integer range 0 to 31;
 begin
     -- The address of the ibus is always connected to program counter
-    ibus_a_o <= std_logic_vector(pgc(IA_LEN-1 downto 0));
+    ibus_a_o <= std_logic_vector(pgc);
     inst_o <= std_logic_vector(inst);
     
-    dbus_a_o <= alu_res(DA_LEN-1 downto 0);
+    dbus_a_o <= std_logic_vector(daddr);
     dbus_d_o <= std_logic_vector(treg);
     
     ssel <= to_integer(unsigned(inst(25 downto 21)));
@@ -213,6 +215,7 @@ begin
 	    end loop;
 	    pgc <= (others => '0');
 	    inst <= (others => '0');
+	    daddr <= (others => '0');
 	elsif rising_edge(clk) then
 	    if ten = '1' and tsel /= 0 then
 		reg(tsel) <= tnext;
@@ -228,6 +231,10 @@ begin
 	    
 	    if insten = '1' then
 		inst <= ibus_d_i;
+	    end if;
+	    
+	    if daddren = '1' then
+		daddr <= unsigned(alu_res);
 	    end if;
 	end if;
     end process regproc;
