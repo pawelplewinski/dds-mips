@@ -1,0 +1,19 @@
+1. VHDL file changes (summary)
+  mips32_mdu.vhd - completely rewritten and improved to fit both Booth's multiplier and standard unsigned division algorithms
+  mips32_ctrl.vhd - added changes to reflect the new MDU. Also some changes related to SW/LW instructions (memory is being written to/read from at end of writeback stage, as it should be)
+  mips32_dp.vhd - additional wires for the MDU and also an additional buffering register for the data bus address
+  mem.vhd - removed that disgusting "ADDR_LEN" length generic and replaced with "MEM_LEN". What this stands for is described below
+  imem.vhd - the MEM_LEN generic now specifies the amount of 32-bit words in size
+  dmem.vhd - the memory has been adapted to support byte granularity, thus MEM_LEN specifies the number of bytes in the memory (so theoretically it is now possible to add SB/LB instructions)
+  mips32_arch_behav.vhd - little has changed here functionally, only some data-lenght changes + fixed mult instruction simulation
+  *.vhd - removed these horrible IA_LEN/DA_LEN generics, now all addressing signals are 32 bits
+2. Scripts added
+  add_signals.tcl - adds signals common to both the behavioral and structural architectures to the waveform viewer
+  add_sigs.tcl - adds some signals for mdu debugging, kind of deprecated
+3. test asm programs added:
+  gcd.asm 	- gcd algorithm test
+  mult_test.asm - very simple mult instruction test
+  divu_test.asm - very simple divu instruction test
+  mdu_test.asm  - tests both mult and divu simultaneously
+  memwrite.asm	- sw instruction test + others
+  
