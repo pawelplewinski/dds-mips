@@ -36,7 +36,8 @@ architecture ibehav of mem32 is
     signal iaddr  : natural range 0 to ((2**ADDR_LENGTH)-1);
 begin
 	-- PSL default clock is rising_edge(clk);
-
+	--Checks if the data from correct address are
+	--sent by the instruction memory
 	-- PSL mem_i_data: assert always (bus_addr_inp -> next (bus_data_out = memory(iaddr))) abort not resetn;
     mem_access : process(clk, resetn)
         --variable addr_ctr : unsigned(ADDR_LENGTH-1 downto 0) := (others => '0');
@@ -87,7 +88,8 @@ architecture dbehav of mem32 is
     signal daddr  : natural range 0 to ((2**ADDR_LENGTH)-1);
 begin
 	-- PSL default clock is rising_edge(clk);
-
+	-- Checks if the data from correct address are
+	-- sent by the data memory
 	-- PSL mem_o_data: assert always (bus_addr_inp -> next (bus_data_out = memory(daddr))) abort not resetn;
 
     mem_access : process(clk, resetn)

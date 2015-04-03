@@ -116,5 +116,5 @@ add wave /tb_mips/dut/cpu/controller/ctrl_states_init \
 
 	
 # should run at least 1000 x period
-run {1600 ns}
+run {19000 ns}
 #run {2839 ns}
