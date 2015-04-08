@@ -1,10 +1,11 @@
 *.bak
-output_files/**
-db/**
+output_files/*
+db/*
 synthesis/db/*
 sys/**
-**/out/**
-incremental_db/**
-synthesis/incremental_db/**
-**/work/**
+*/out/*
+incremental_db/*
+synthesis/incremental_db/*
+synthesis/db/*
+*/work/*
 *.wlf
