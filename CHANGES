@@ -1,19 +1,32 @@
-1. VHDL file changes (summary)
-  mips32_mdu.vhd - completely rewritten and improved to fit both Booth's multiplier and standard unsigned division algorithms
-  mips32_ctrl.vhd - added changes to reflect the new MDU. Also some changes related to SW/LW instructions (memory is being written to/read from at end of writeback stage, as it should be)
-  mips32_dp.vhd - additional wires for the MDU and also an additional buffering register for the data bus address
-  mem.vhd - removed that disgusting "ADDR_LEN" length generic and replaced with "MEM_LEN". What this stands for is described below
-  imem.vhd - the MEM_LEN generic now specifies the amount of 32-bit words in size
-  dmem.vhd - the memory has been adapted to support byte granularity (little endian format), thus MEM_LEN specifies the number of bytes in the memory (so theoretically it is now possible to add SB/LB instructions)
-  mips32_arch_behav.vhd - little has changed here functionally, only some data-lenght changes + fixed mult instruction simulation
-  *.vhd - removed these horrible IA_LEN/DA_LEN generics, now all addressing signals are 32 bits
-2. Scripts added
-  add_signals.tcl - adds signals common to both the behavioral and structural architectures to the waveform viewer
-  add_sigs.tcl - adds some signals for mdu debugging, kind of deprecated
-3. test asm programs added:
-  gcd.asm 	- gcd algorithm test
-  mult_test.asm - very simple mult instruction test
-  divu_test.asm - very simple divu instruction test
-  mdu_test.asm  - tests both mult and divu simultaneously
-  memwrite.asm	- sw instruction test + others
-  
+-- 02/04/2015
+    1. VHDL file changes (summary)
+      mips32_mdu.vhd - completely rewritten and improved to fit both Booth's multiplier and standard unsigned division algorithms
+      mips32_ctrl.vhd - added changes to reflect the new MDU. Also some changes related to SW/LW instructions (memory is being written to/read from at end of writeback stage, as it should be)
+      mips32_dp.vhd - additional wires for the MDU and also an additional buffering register for the data bus address
+      mem.vhd - removed that disgusting "ADDR_LEN" length generic and replaced with "MEM_LEN". What this stands for is described below
+      imem.vhd - the MEM_LEN generic now specifies the amount of 32-bit words in size
+      dmem.vhd - the memory has been adapted to support byte granularity (little endian format), thus MEM_LEN specifies the number of bytes in the memory (so theoretically it is now possible to add SB/LB instructions)
+      mips32_arch_behav.vhd - little has changed here functionally, only some data-lenght changes + fixed mult instruction simulation
+      *.vhd - removed these horrible IA_LEN/DA_LEN generics, now all addressing signals are 32 bits
+    2. Scripts added
+      add_signals.tcl - adds signals common to both the behavioral and structural architectures to the waveform viewer
+      add_sigs.tcl - adds some signals for mdu debugging, kind of deprecated
+    3. test asm programs added:
+      gcd.asm 	- gcd algorithm test
+      mult_test.asm - very simple mult instruction test
+      divu_test.asm - very simple divu instruction test
+      mdu_test.asm  - tests both mult and divu simultaneously
+      memwrite.asm	- sw instruction test + others
+ 
+-- 08/04/2015
+    1. VHDL file changes (summary)
+      mips32_mdu.vhd - fixed a combinatorial loop and some minor improvements
+      mips32_dp.vhd - since the post-synthesis simulation file will "hide" the registers, they have all been replaced with individual entities (as opposed to one huge array). As a consequence, a lot of code has been re-written and optimized to synthesize expected logic.
+      mips32_arch_behav.vhd - again, little changes here, but added an extra 'state_o' signal for the state to align with post-synthesis
+      tb_mips.vhd - the test bench now properly detects when 'gut' and 'dut' both trigger an interrupt, as a sign of end of simulation
+      *.vhd - fixed the indentation of most files and overall tidied up a bit
+    2. Scripts added
+      add_sigs_post_syn.tcl - similarly as the other scripts, adds signals used for comparison from the gut and post-synthesis dut to the wave viewer
+    3. New files
+      Quartus project as seen in dir 'synthesis'
+      Post synthesis files *.vho and *.sdf as seen in 'synthesis/simulation/modelsim'. Note: use 'simulation' directory for simulation instead of the latter.

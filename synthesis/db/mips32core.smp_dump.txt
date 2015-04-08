@@ -1,0 +1,8 @@
+
+State Machine - |mips32core|mips32_ctrl:controller|state
+Name state.writeback state.execute state.decode state.fetch state.init 
+state.init 0 0 0 0 0 
+state.fetch 0 0 0 1 1 
+state.decode 0 0 1 0 1 
+state.execute 0 1 0 0 1 
+state.writeback 1 0 0 0 1 

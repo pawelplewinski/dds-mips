@@ -1,11 +1,10 @@
-*bak
-*mpf
-*mti
+*.bak
 output_files/**
 db/**
+synthesis/db/*
 sys/**
 **/out/**
 incremental_db/**
-simulation/**
+synthesis/incremental_db/**
 **/work/**
-wlf*
+*.wlf

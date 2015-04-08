@@ -1,0 +1,150 @@
+{/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32_alu.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32_alu.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity mips32_alu
+-- Compiling architecture behavior of mips32_alu
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32core_arch_struct.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32core_arch_struct.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling architecture structural of mips32core
+-- Loading entity mips32core
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/imem.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/imem.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Loading package std_logic_textio
+-- Compiling architecture imem of mem32
+-- Loading entity mem32
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32core_arch_behav.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32core_arch_behav.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling architecture behavior of mips32core
+-- Loading entity mips32core
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32_dp.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32_dp.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity mips32_dp
+-- Compiling architecture behavior of mips32_dp
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32sys_dut.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32sys_dut.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity mips32sys_dut
+-- Compiling architecture struct of mips32sys_dut
+-- Loading package std_logic_textio
+-- Loading entity mem32
+-- Loading entity mips32core
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/synthesis/simulation/modelsim/mips32core.vho} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/synthesis/simulation/modelsim/mips32core.vho}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package VITAL_Timing
+-- Loading package VITAL_Primitives
+-- Loading package dffeas_pack
+-- Loading package altera_primitives_components
+-- Loading package cycloneive_atom_pack
+-- Loading package cycloneive_components
+-- Compiling architecture structure of mips32core
+-- Loading package NUMERIC_STD
+-- Loading entity mips32core
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32_mdu.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32_mdu.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity mips32_mdu
+-- Compiling architecture behavior of mips32_mdu
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/dmem.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/dmem.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling architecture dmem of mem32
+-- Loading package std_logic_textio
+-- Loading entity mem32
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32sys_gut.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32sys_gut.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity mips32sys_gut
+-- Compiling architecture struct of mips32sys_gut
+-- Loading package std_logic_textio
+-- Loading entity mem32
+-- Loading entity mips32core
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32_cmp.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32_cmp.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity mips32_cmp
+-- Compiling architecture behavior of mips32_cmp
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/tb_mips.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/tb_mips.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Loading package std_logic_textio
+-- Compiling entity tb_mips
+-- Compiling architecture tb_arch of tb_mips
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32core.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32core.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity mips32core
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mem.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mem.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Loading package std_logic_textio
+-- Compiling entity mem32
+
+} {} {}} {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32_ctrl.vhd} {1 {vcom -work work -2002 -explicit {/home/atomic/Projects/Digital Design/DDS_MIPS/MipsProject/vhdl/mips32_ctrl.vhd}
+Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity mips32_ctrl
+-- Compiling architecture behavior of mips32_ctrl
+
+} {} {}}
