@@ -1,0 +1,15 @@
+A simple ISA4000 32-bit MIPS processor with no pipe-line and small instruction set, written in VHDL for the course "Design of Digital Systems", University of Twente
+
+Developers:
+Frank Thomas Trillhose
+Viktorio el Hakim
+Pawel Plewinski
+Mert Imre
+
+Notes on simulation:
+  - Write your program in Mars IDE and assemble it; make sure that .text starts at 0x00000000 (check Settings -> Memory configuration)
+  - Always use SW/LW at address 0x00000000 and DON'T simulate in Mars; this is because our data memory is mapped on a separate bus starting at 0x00000000, while in Mars it starts at 0x00003000
+  - Once the program is assembled, File -> Dump memory -> Hexadecimal text -> Dump to file
+  - In tb_mips.vhd, specify the program file with the generic "PGM_FILE" and then simulate with ModelSim (no optimization!!!)
+  - Run scripts, add waves or whatever and test, test, test :)
+  - Tip - when simulating, you don't need to edit the tb_mips.vhd and re-compiling every time you make changes to the assembly program. Just keep the same name of the hex file and then in Mars assemble->dump-> name_of_file.txt. Finally in ModelSim just type "restart -f" in console and you're good to go. The file will be re-loaded in imem. This will save you A LOT of time.

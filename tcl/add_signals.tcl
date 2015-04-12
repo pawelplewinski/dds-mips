@@ -49,7 +49,8 @@ sim:/tb_mips/gut/ibus_a_o \
 sim:/tb_mips/dut/ibus_d_i \
 sim:/tb_mips/dut/ibus_a_o
 add wave -noupdate -divider -height 32 "PSL tests"
-add wave /tb_mips/dut/cpu/controller/ctrl_states_init \
+add wave -position insertpoint  \
+	/tb_mips/dut/cpu/controller/ctrl_states_init \
 	/tb_mips/dut/cpu/controller/ctrl_states_fetch \
 	/tb_mips/dut/cpu/controller/ctrl_states_decode \
 	/tb_mips/dut/cpu/controller/ctrl_states_exec_normal \
