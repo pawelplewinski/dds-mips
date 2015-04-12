@@ -121,6 +121,11 @@ architecture behavior of mips32_dp is
     signal tsel : integer range 0 to 31;
     signal dsel : integer range 0 to 31;
 begin
+	-- PSL default clock is rising_edge(clk);
+	--Checks if the processor requests from ibus the address specified in 
+	-- program counter
+	-- PSL dp_ibus_addr: assert always (ibus_a_o = std_logic_vector(pgc));
+
     -- The address of the ibus is always connected to program counter
     ibus_a_o <= std_logic_vector(pgc);
     inst_o <= std_logic_vector(inst);
@@ -207,6 +212,16 @@ begin
 	
     pgcnext <= unsigned(alu_res);
 	
+	--Check if the corresponding signals in the datapath (namely 
+	--registers, program counter and current instruction) have correct 
+	--form (are zeroed) after reset
+	--PSL dp_reset_reg: assert forall i IN {0 to 31}: forall j in {0 to 31}: always (resetn='0' -> (reg(i)(j) = '0'));
+	--PSL dp_reset_pgc: assert forall i IN {0 to 31}: always (resetn='0' -> (pgc(i) = '0'));
+	--PSL dp_reset_inst: assert forall i IN {0 to 31}: always (resetn='0' -> (inst(i) = '0'));
+	
+	--Checks if when program counter enable signal is high the pgcnext is 
+	--correctly assigned to program counter
+	--PSL dp_pgc_next: assert always ((pgcen='1') -> next! (pgc = pgcnext));
     regproc : process(clk,resetn)
     begin
 	if resetn = '0' then

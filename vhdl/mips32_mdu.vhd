@@ -21,7 +21,9 @@ end entity mips32_mdu;
 
 architecture behavior of mips32_mdu is
     subtype u32 is unsigned(31 downto 0);
-    
+    -- PSL default clock is rising_edge(clk);
+
+	--PSL mdu_cycles_cnt: assert always (start_i -> next[32] (rdy_o));
     -- Registers
     -- MDU operands
     signal mdu_r : u32 := (others => '0');

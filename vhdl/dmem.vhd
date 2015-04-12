@@ -6,7 +6,12 @@ use IEEE.numeric_std.all;
 architecture dmem of mem32 is
     type mem_type is array (natural range <>) of std_logic_vector(7 downto 0);
     signal memory : mem_type(0 to MEM_LEN-1);
+
 begin
+	-- PSL default clock is rising_edge(clk);
+	--Checks if the data from correct address are
+	--sent by the instruction memory
+	-- PSL mem_i_data: assert always (wbs_addr_i -> next (wbs_dat_o = memory(to_integer(unsigned(wbs_addr_i))+3) & 		      memory(to_integer(unsigned(wbs_addr_i))+2) & memory(to_integer(unsigned(wbs_addr_i))+1) & memory(to_integer(unsigned(wbs_addr_i))))) abort not resetn;
     mem_access : process(clk, resetn)
     begin
         if(resetn = '0') then
