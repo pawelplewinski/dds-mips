@@ -1,7 +1,7 @@
 A simple ISA4000 32-bit MIPS processor with no pipe-line and small instruction set, written in VHDL for the course "Design of Digital Systems", University of Twente
 
 Developers:
-Frank Thomas Trillhose
+Frank Thomas
 Viktorio el Hakim
 Pawel Plewinski
 Mert Imre
