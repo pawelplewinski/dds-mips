@@ -321,6 +321,8 @@ begin
 	end process decoder1;
 	reg_en <= (treg_en and (31 downto 0 => ten)) or (dreg_en and (31 downto 0 => den));
 	
+	-- PSL default clock is rising_edge(clk);
+	
 	--Check if the corresponding signals in the datapath (namely 
 	--registers, program counter and current instruction) have correct 
 	--form (are zeroed) after reset
